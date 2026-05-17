@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const SafeDriverApp());
 }
 
@@ -9,12 +11,33 @@ class SafeDriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: AlertScreen());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const AlertScreen(),
+    );
   }
 }
 
-class AlertScreen extends StatelessWidget {
+class AlertScreen extends StatefulWidget {
   const AlertScreen({super.key});
+
+  @override
+  State<AlertScreen> createState() => _AlertScreenState();
+}
+
+class _AlertScreenState extends State<AlertScreen> {
+  final AudioPlayer player = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    playAlarm();
+  }
+
+  Future<void> playAlarm() async {
+    await player.setVolume(1.0);
+    await player.play(AssetSource('alarm.mp3'));
+  }
 
   @override
   Widget build(BuildContext context) {
