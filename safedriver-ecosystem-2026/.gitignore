@@ -1,5 +1,0 @@
-venv/
-*.db
-__pycache__/
-build/
-.dart_tool/
