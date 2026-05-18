@@ -1,4 +1,4 @@
-# 🚗 SafeDriver Ecosystem 2026
+# 🚗 SafeDriver Ecosystem-2026
 
 Sistema inteligente de monitoreo y alertas tempranas para conductores, desarrollado como ecosistema distribuido utilizando FastAPI, SQLite, JWT, Flutter y simulación IoT/Godot.
 
@@ -338,6 +338,62 @@ IoT Simulator / Godot
 - Validación de conductor inexistente
 - Persistencia SQLite
 
+---
+
+# 🌐 Ejemplos cURL
+
+## Registrar usuario
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/register" \
+-H "Content-Type: application/json" \
+-d '{
+  "username":"jose",
+  "password":"1234"
+}'
+```
+
+---
+
+## Login
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/login" \
+-H "Content-Type: application/json" \
+-d '{
+  "username":"jose",
+  "password":"1234"
+}'
+```
+
+---
+
+## Crear conductor
+
+```bash
+curl -X POST "http://127.0.0.1:8000/drivers" \
+-H "Authorization: Bearer TOKEN_JWT" \
+-H "Content-Type: application/json" \
+-d '{
+  "name":"JoseDriver",
+  "dni":"12345678"
+}'
+```
+
+---
+
+## Crear alerta
+
+```bash
+curl -X POST "http://127.0.0.1:8000/alerts" \
+-H "Authorization: Bearer TOKEN_JWT" \
+-H "Content-Type: application/json" \
+-d '{
+  "driver_id":1,
+  "alert_type":"FATIGA",
+  "severity":"HIGH"
+}'
+```
 ---
 
 # 👨‍💻 Equipo
