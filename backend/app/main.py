@@ -20,12 +20,10 @@ app.add_middleware(
 )
 
 security_scheme = HTTPBearer()
-# ── Modelo de login (JSON, compatible con Flutter) ──────────────
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-# ── Dependencia JWT ─────────────────────────────────────────────
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security_scheme),
                      db: Session = Depends(database.get_db)):
     try:
