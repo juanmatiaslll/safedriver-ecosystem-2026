@@ -1,3 +1,4 @@
+
 name: mobile
 description: "SafeDriver mobile app"
 
@@ -7,6 +8,15 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.11.5
+
+name: safedriver_mobile
+description: "Modulo mobile de SafeDriver para control de alertas."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
 
 dependencies:
   flutter:
@@ -26,3 +36,10 @@ flutter:
 
   assets:
     - assets/alarm.mp3
+
+  http: ^1.2.0
+  shared_preferences: ^2.2.0
+
+flutter:
+  uses-material-design: true
+

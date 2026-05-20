@@ -1,0 +1,12 @@
+name: safedriver_ecosystem_2026
+description: "Mi aplicación Flutter"
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0' # Ajusta esto según tu versión de Flutter
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0 # Para las peticiones al backend
+  shared_preferences: ^2.2.0 # Para guardar el JWT token

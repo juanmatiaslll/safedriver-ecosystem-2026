@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,12 +13,18 @@ class SafeDriverApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'SafeDriver Mobile',
       debugShowCheckedModeBanner: false,
-      home: const AlertScreen(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const LoginScreen(),
     );
   }
 }
 
+// Pantalla de Emergencia diseñada por Jordy con alarma sonora
 class AlertScreen extends StatefulWidget {
   const AlertScreen({super.key});
 
@@ -37,6 +44,12 @@ class _AlertScreenState extends State<AlertScreen> {
   Future<void> playAlarm() async {
     await player.setVolume(1.0);
     await player.play(AssetSource('alarm.mp3'));
+  }
+
+  @override
+  void dispose() {
+    player.dispose();
+    super.dispose();
   }
 
   @override
