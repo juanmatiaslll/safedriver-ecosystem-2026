@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'screens/RegisterScreen.dart';
+import 'screens/alerts_screen.dart';
 import 'screens/login_screen.dart';
 
+// En tu archivo main.dart
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const SafeDriverApp());
+  runApp(MaterialApp(
+    initialRoute: '/',
+    routes: {
+      '/': (context) => LoginScreen(),
+      '/register': (context) => RegisterScreen(),
+      '/alerts': (context) => AlertsScreen(),
+    },
+  ));
 }
 
 class SafeDriverApp extends StatelessWidget {
