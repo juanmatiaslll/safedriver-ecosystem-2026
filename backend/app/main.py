@@ -27,7 +27,6 @@ class LoginRequest(BaseModel):
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security_scheme),
                      db: Session = Depends(database.get_db)):
     try:
-        # 👇 Aquí agregamos .credentials para leer el texto del token
         payload  = jwt.decode(token.credentials, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
         username = payload.get("sub")
         if username is None:
