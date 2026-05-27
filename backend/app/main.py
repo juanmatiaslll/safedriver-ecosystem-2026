@@ -4,6 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from pydantic import BaseModel
+from datetime import datetime, timezone
 
 from . import models, schemas, database, auth
 
@@ -27,7 +28,6 @@ class LoginRequest(BaseModel):
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security_scheme),
                      db: Session = Depends(database.get_db)):
     try:
-        # 👇 Aquí agregamos .credentials para leer el texto del token
         payload  = jwt.decode(token.credentials, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
         username = payload.get("sub")
         if username is None:
@@ -83,19 +83,64 @@ def create_alert(alert: schemas.AlertCreate,
     driver = db.query(models.Driver).filter(models.Driver.id == alert.driver_id).first()
     if not driver:
         raise HTTPException(status_code=404, detail="Conductor no existe")
-    nueva = models.Alert(**alert.model_dump())
+    nueva = models.Alert(**alert.model_dump(), created_at=datetime.now(timezone.utc))
     db.add(nueva)
     driver.status = "EN_ALERTA"
     db.commit(); db.refresh(nueva)
-    return nueva
+    return {
+        "id": nueva.id,
+        "driver_id": nueva.driver_id,
+        "alert_type": nueva.alert_type,
+        "severity": nueva.severity,
+        "is_active": nueva.is_active,
+        "created_at": nueva.created_at.isoformat() if nueva.created_at else None,
+        "driver_name": driver.name,
+    }
 
 # ── 6. Ver alertas activas (requiere JWT) ───────────────────────
 @app.get("/alerts", response_model=list[schemas.AlertResponse], tags=["Alertas"])
 def get_alerts(db: Session = Depends(database.get_db),
                _: models.User = Depends(get_current_user)):
-    return db.query(models.Alert).filter(models.Alert.is_active == True).all()
+    alerts = db.query(models.Alert).filter(models.Alert.is_active == True).all()
+    result = []
+    for alert in alerts:
+        driver = db.query(models.Driver).filter(models.Driver.id == alert.driver_id).first()
+        result.append({
+            "id": alert.id,
+            "driver_id": alert.driver_id,
+            "alert_type": alert.alert_type,
+            "severity": alert.severity,
+            "is_active": alert.is_active,
+            "created_at": alert.created_at.isoformat() if alert.created_at else None,
+            "driver_name": driver.name if driver else None,
+        })
+    return result
 
-# ── 7. Estado del conductor (para Godot) ────────────────────────
+# ── 7. Resolver alerta (requiere JWT) ───────────────────────────
+@app.put("/alerts/{id}/resolve", tags=["Alertas"])
+def resolve_alert(id: int,
+                  db: Session = Depends(database.get_db),
+                  _: models.User = Depends(get_current_user)):
+    alert = db.query(models.Alert).filter(models.Alert.id == id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    if not alert.is_active:
+        raise HTTPException(status_code=400, detail="La alerta ya está resuelta")
+    alert.is_active = False
+    driver = db.query(models.Driver).filter(models.Driver.id == alert.driver_id).first()
+    if driver:
+        # Verificar si el conductor tiene otras alertas activas
+        otras_activas = db.query(models.Alert).filter(
+            models.Alert.driver_id == driver.id,
+            models.Alert.is_active == True,
+            models.Alert.id != id
+        ).count()
+        if otras_activas == 0:
+            driver.status = "OK"
+    db.commit()
+    return {"msg": "Alerta resuelta", "alert_id": id}
+
+# ── 8. Estado del conductor (para Godot) ────────────────────────
 @app.get("/drivers/{id}/status", tags=["Conductores"])
 def driver_status(id: int, db: Session = Depends(database.get_db)):
     driver = db.query(models.Driver).filter(models.Driver.id == id).first()

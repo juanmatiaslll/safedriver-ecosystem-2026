@@ -1,45 +1,69 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'register_screen.dart';
 import 'alerts_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _apiService = ApiService();
   bool _isLoading = false;
 
-  void _handleLogin() async {
+  void _handleRegister() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirm = _confirmPasswordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _showError("Completa todos los campos");
+      return;
+    }
+
+    if (password != confirm) {
+      _showError("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (password.length < 4) {
+      _showError("La contraseña debe tener al menos 4 caracteres");
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    bool success = await _apiService.login(
-      _usernameController.text.trim(),
-      _passwordController.text.trim(),
-    );
+    bool success = await _apiService.register(username, password);
 
     setState(() => _isLoading = false);
 
     if (success) {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const AlertsScreen()),
-      );
-    } else {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Credenciales incorrectas"),
+          content: Text("Registro exitoso. Ahora inicia sesión."),
+          backgroundColor: Color(0xFF16A34A),
         ),
       );
+      Navigator.pop(context);
+    } else {
+      _showError("El usuario ya existe o hubo un error");
     }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFFDC2626),
+      ),
+    );
   }
 
   @override
@@ -68,26 +92,26 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Image.asset(
                   'assets/images/logo.png',
-                  height: 130,
+                  height: 100,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
                 const Text(
-                  "Bienvenido",
+                  "Crear Cuenta",
                   style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  "Sistema Inteligente de Alertas",
+                  "Regístrate como operador",
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 35),
+                const SizedBox(height: 30),
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
@@ -116,6 +140,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    hintText: "Confirmar contraseña",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
@@ -123,9 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: _handleRegister,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
                             elevation: 5,
                             shape: RoundedRectangleBorder(
@@ -133,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           child: const Text(
-                            "Iniciar Sesión",
+                            "Registrarse",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -141,16 +180,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 20),
                 TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
+                  onPressed: () => Navigator.pop(context),
                   child: const Text(
-                    "¿No tienes cuenta? Regístrate",
+                    "¿Ya tienes cuenta? Inicia sesión",
                     style: TextStyle(
                       color: Color(0xFF2563EB),
                       fontSize: 15,
