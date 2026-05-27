@@ -19,7 +19,7 @@ class SafeDriverApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const LoginScreen(), // Mantiene el inicio en la pantalla de autenticación
     );
   }
 }
@@ -59,10 +59,10 @@ class _AlertScreenState extends State<AlertScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.warning_amber_rounded, color: Colors.white, size: 120),
-            SizedBox(height: 30),
-            Text(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 120),
+            const SizedBox(height: 30),
+            const Text(
               'ALERTA DE FATIGA',
               style: TextStyle(
                 color: Colors.white,
@@ -70,8 +70,8 @@ class _AlertScreenState extends State<AlertScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'CONDUCTOR EN RIESGO',
               style: TextStyle(color: Colors.white, fontSize: 22),
             ),
