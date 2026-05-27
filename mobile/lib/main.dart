@@ -16,15 +16,17 @@ class SafeDriverApp extends StatelessWidget {
       title: 'SafeDriver Mobile',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-      home: const LoginScreen(), // Mantiene el inicio en la pantalla de autenticación
+      home: const LoginScreen(),
     );
   }
 }
 
-// Pantalla de Emergencia diseñada por Jordy con alarma sonora
 class AlertScreen extends StatefulWidget {
   const AlertScreen({super.key});
 
@@ -55,27 +57,70 @@ class _AlertScreenState extends State<AlertScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.red[700],
+      backgroundColor: const Color(0xFFB91C1C),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 120),
-            const SizedBox(height: 30),
-            const Text(
-              'ALERTA DE FATIGA',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-              ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'CONDUCTOR EN RIESGO',
-              style: TextStyle(color: Colors.white, fontSize: 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 120,
+                ),
+                const SizedBox(height: 25),
+                const Text(
+                  'ALERTA DE FATIGA',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'CONDUCTOR EN RIESGO',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 22,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.notifications_active),
+                  label: const Text(
+                    'Emergencia Detectada',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 55),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
