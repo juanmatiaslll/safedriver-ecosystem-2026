@@ -8,6 +8,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    role = Column(String, default="CONDUCTOR")
+    driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=True)
 
 class Driver(Base):
     __tablename__ = "drivers"

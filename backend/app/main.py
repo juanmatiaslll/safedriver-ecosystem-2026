@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from pydantic import BaseModel
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from . import models, schemas, database, auth
 
@@ -39,13 +39,20 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security_sche
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
     return user
 
+def get_current_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Operation not permitted for this role")
+    return current_user
+
 # ── 1. Registro ─────────────────────────────────────────────────
 @app.post("/auth/register", tags=["Autenticación"])
 def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     if db.query(models.User).filter(models.User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Usuario ya registrado")
     nuevo = models.User(username=user.username,
-                        hashed_password=auth.get_password_hash(user.password))
+                        hashed_password=auth.get_password_hash(user.password),
+                        role=user.role,
+                        driver_id=user.driver_id)
     db.add(nuevo); db.commit()
     return {"msg": "Usuario creado exitosamente"}
 
@@ -55,7 +62,11 @@ def login(data: LoginRequest, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username == data.username).first()
     if not user or not auth.verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    token = auth.create_access_token({"sub": user.username})
+    token = auth.create_access_token({
+        "sub": user.username,
+        "rol": user.role,
+        "driver_id": user.driver_id,
+    })
     return {"access_token": token, "token_type": "bearer"}
 
 # ── 3. Crear conductor ──────────────────────────────────────────
@@ -74,7 +85,26 @@ def create_driver(driver: schemas.DriverCreate,
 def get_drivers(db: Session = Depends(database.get_db)):
     return db.query(models.Driver).all()
 
-# ── 5. Crear alerta (requiere JWT) ──────────────────────────────
+# ── 5. Resumen de flota (solo ADMIN) ────────────────────────────
+@app.get("/drivers/summary", response_model=list[schemas.DriverSummaryResponse], tags=["Conductores"])
+def get_drivers_summary(db: Session = Depends(database.get_db),
+                        _: models.User = Depends(get_current_admin)):
+    drivers = db.query(models.Driver).all()
+    result = []
+    for driver in drivers:
+        active_count = db.query(models.Alert).filter(
+            models.Alert.driver_id == driver.id,
+            models.Alert.is_active == True
+        ).count()
+        result.append({
+            "id": driver.id,
+            "name": driver.name,
+            "status": driver.status,
+            "active_alerts_count": active_count,
+        })
+    return result
+
+# ── 6. Crear alerta (requiere JWT) ──────────────────────────────
 @app.post("/alerts", response_model=schemas.AlertResponse,
           status_code=201, tags=["Alertas"])
 def create_alert(alert: schemas.AlertCreate,
@@ -97,11 +127,19 @@ def create_alert(alert: schemas.AlertCreate,
         "driver_name": driver.name,
     }
 
-# ── 6. Ver alertas activas (requiere JWT) ───────────────────────
+# ── 7. Ver alertas activas (requiere JWT) ───────────────────────
 @app.get("/alerts", response_model=list[schemas.AlertResponse], tags=["Alertas"])
-def get_alerts(db: Session = Depends(database.get_db),
+def get_alerts(date: str | None = Query(None),
+               db: Session = Depends(database.get_db),
                _: models.User = Depends(get_current_user)):
-    alerts = db.query(models.Alert).filter(models.Alert.is_active == True).all()
+    query = db.query(models.Alert).filter(models.Alert.is_active == True)
+    if date == "today":
+        now = datetime.now(timezone.utc)
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+        query = query.filter(models.Alert.created_at >= start,
+                             models.Alert.created_at < end)
+    alerts = query.all()
     result = []
     for alert in alerts:
         driver = db.query(models.Driver).filter(models.Driver.id == alert.driver_id).first()
@@ -116,7 +154,7 @@ def get_alerts(db: Session = Depends(database.get_db),
         })
     return result
 
-# ── 7. Resolver alerta (requiere JWT) ───────────────────────────
+# ── 8. Resolver alerta (requiere JWT) ───────────────────────────
 @app.put("/alerts/{id}/resolve", tags=["Alertas"])
 def resolve_alert(id: int,
                   db: Session = Depends(database.get_db),
