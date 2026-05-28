@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
 import 'register_screen.dart';
 import 'alerts_screen.dart';
+import 'driver_home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,8 +14,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
+
   final _passwordController = TextEditingController();
+
   final _apiService = ApiService();
+
   bool _isLoading = false;
 
   void _handleLogin() async {
@@ -27,13 +32,34 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
+      final role = await _apiService.getRoleFromToken();
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const AlertsScreen()),
-      );
+
+      if (role == "ADMIN") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AlertsScreen(),
+          ),
+        );
+      } else if (role == "CONDUCTOR") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DriverHome(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Rol no válido"),
+          ),
+        );
+      }
     } else {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Credenciales incorrectas"),
@@ -57,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -121,15 +147,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 58,
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
                       : ElevatedButton(
                           onPressed: _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor:
+                                const Color(0xFF2563EB),
                             foregroundColor: Colors.white,
                             elevation: 5,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius:
+                                  BorderRadius.circular(18),
                             ),
                           ),
                           child: const Text(
@@ -146,7 +176,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const RegisterScreen(),
+                      ),
                     );
                   },
                   child: const Text(
