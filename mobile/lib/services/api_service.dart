@@ -1,11 +1,16 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart'; 
+
+import 'package:safedriver_mobile/main.dart';
+
 import '../models/alert_model.dart';
+import '../screens/login_screen.dart';
 
 class ApiService {
-  // ── Configuración automática de IP según la plataforma ──
   static String get baseUrl {
     if (kIsWeb) {
       return "http://127.0.0.1:8000";
@@ -14,27 +19,115 @@ class ApiService {
     }
   }
 
-  // ── 1. Login y Guardar JWT ─────────────────────────────────────────────
-  Future<bool> login(String username, String password) async {
+  Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+  }
+
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt_token');
+  }
+
+  Map<String, dynamic>? _decodeToken(String token) {
+    try {
+      final parts = token.split('.');
+
+      if (parts.length != 3) return null;
+
+      final payload = parts[1];
+
+      final normalized = base64Url.normalize(payload);
+
+      final decoded = utf8.decode(
+        base64Url.decode(normalized),
+      );
+
+      return jsonDecode(decoded);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<String?> getRoleFromToken() async {
+    final token = await getToken();
+
+    if (token == null) return null;
+
+    final decoded = _decodeToken(token);
+
+    return decoded?['rol'];
+  }
+
+  Future<int?> getDriverIdFromToken() async {
+    final token = await getToken();
+
+    if (token == null) return null;
+
+    final decoded = _decodeToken(token);
+
+    return decoded?['driver_id'];
+  }
+
+  Future<bool> isTokenExpired() async {
+    final token = await getToken();
+
+    if (token == null) return true;
+
+    final decoded = _decodeToken(token);
+
+    if (decoded == null) return true;
+
+    final exp = decoded['exp'];
+
+    if (exp == null) return true;
+
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    return now >= exp;
+  }
+
+  Future<void> handleUnauthorized() async {
+    await clearToken();
+
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
+  Future<bool> login(
+    String username,
+    String password,
+  ) async {
     final url = Uri.parse('$baseUrl/auth/login');
+
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: jsonEncode({
           "username": username,
           "password": password,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        String token = data['access_token'];
-        
+
+        final token = data['access_token'];
+
         final prefs = await SharedPreferences.getInstance();
+
         await prefs.setString('jwt_token', token);
+
         return true;
       }
+
       return false;
     } catch (e) {
       print("Error en login: $e");
@@ -42,18 +135,24 @@ class ApiService {
     }
   }
 
-  // ── 2. Register (nuevo) ────────────────────────────────────────────────
-  Future<bool> register(String username, String password) async {
+  Future<bool> register(
+    String username,
+    String password,
+  ) async {
     final url = Uri.parse('$baseUrl/auth/register');
+
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: jsonEncode({
           "username": username,
           "password": password,
         }),
       );
+
       return response.statusCode == 200;
     } catch (e) {
       print("Error en register: $e");
@@ -61,11 +160,10 @@ class ApiService {
     }
   }
 
-  // ── 3. Obtener Alertas Activas ─────────────────────────────────────────
-  Future<List<AlertModel>?> getAlerts() async { 
+  Future<List<AlertModel>?> getAlerts() async {
     final url = Uri.parse('$baseUrl/alerts');
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+
+    final token = await getToken();
 
     if (token == null) return null;
 
@@ -74,14 +172,22 @@ class ApiService {
         url,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $token", 
+          "Authorization": "Bearer $token",
         },
       );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> decodedList = jsonDecode(response.body);
-        return AlertModel.fromJsonList(decodedList); 
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return null;
       }
+
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedList =
+            jsonDecode(response.body);
+
+        return AlertModel.fromJsonList(decodedList);
+      }
+
       return null;
     } catch (e) {
       print("Error al obtener alertas: $e");
@@ -89,11 +195,14 @@ class ApiService {
     }
   }
 
-  // ── 4. Crear conductor (nuevo) ─────────────────────────────────────────
-  Future<bool> createDriver(String name, String dni) async {
+  Future<bool> createDriver(
+    String name,
+    String dni,
+  ) async {
     final url = Uri.parse('$baseUrl/drivers');
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+
+    final token = await getToken();
+
     if (token == null) return false;
 
     try {
@@ -108,6 +217,12 @@ class ApiService {
           "dni": dni,
         }),
       );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return false;
+      }
+
       return response.statusCode == 201;
     } catch (e) {
       print("Error al crear conductor: $e");
@@ -115,11 +230,15 @@ class ApiService {
     }
   }
 
-  // ── 5. Crear alerta (nuevo) ────────────────────────────────────────────
-  Future<bool> createAlert(int driverId, String alertType, String severity) async {
+  Future<bool> createAlert(
+    int driverId,
+    String alertType,
+    String severity,
+  ) async {
     final url = Uri.parse('$baseUrl/alerts');
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+
+    final token = await getToken();
+
     if (token == null) return false;
 
     try {
@@ -135,6 +254,12 @@ class ApiService {
           "severity": severity,
         }),
       );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return false;
+      }
+
       return response.statusCode == 201;
     } catch (e) {
       print("Error al crear alerta: $e");
