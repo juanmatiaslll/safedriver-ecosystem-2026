@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:safedriver_mobile/main.dart';
 
+import '../models/driver_model.dart';
 import '../models/alert_model.dart';
 import '../screens/login_screen.dart';
 
@@ -264,6 +265,59 @@ class ApiService {
     } catch (e) {
       print("Error al crear alerta: $e");
       return false;
+    }
+  }
+
+  Future<bool> resolveAlert(int alertId) async {
+    final url = Uri.parse('$baseUrl/alerts/$alertId/resolve');
+    final token = await getToken();
+
+    if (token == null) return false;
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return false;
+      }
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error al resolver alerta: $e");
+      return false;
+    }
+  }
+  Future<List<DriverModel>> getDrivers() async {
+    final url = Uri.parse('$baseUrl/drivers');
+    final token = await getToken();
+
+    if (token == null) return [];
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Aquí convertimos los datos de 'dynamic' a una lista de 'DriverModel'
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((dynamic item) => DriverModel.fromJson(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Error al obtener conductores: $e");
+      return [];
     }
   }
 }
