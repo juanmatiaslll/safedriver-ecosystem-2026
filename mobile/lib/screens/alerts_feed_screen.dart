@@ -18,7 +18,7 @@ class _AlertsFeedScreenState extends State<AlertsFeedScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Alertas")),
       body: FutureBuilder<List<AlertModel>?>(
-        future: _apiService.getAlerts(), // <--- USA LA VARIABLE AQUÍ
+        future: _apiService.getAlerts(todayOnly: true),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           return ListView.builder(

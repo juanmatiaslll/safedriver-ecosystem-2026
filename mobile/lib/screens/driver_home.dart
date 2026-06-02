@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/alert_model.dart';
 import '../utils/colors.dart';
+import 'login_screen.dart';
 
 class DriverHome extends StatefulWidget {
   const DriverHome({super.key});
@@ -14,6 +15,15 @@ class _DriverHomeState extends State<DriverHome> {
   final ApiService _apiService = ApiService();
 
   bool _loading = true;
+
+  void _logout() async {
+    await _apiService.clearToken();
+    if (!context.mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
   List<AlertModel> _alerts = [];
 
   @override
@@ -123,6 +133,13 @@ class _DriverHomeState extends State<DriverHome> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text("Mis Alertas"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Cerrar sesión",
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: _loading
           ? const Center(
