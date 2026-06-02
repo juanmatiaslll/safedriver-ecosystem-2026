@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/alert_model.dart';
 import '../utils/colors.dart';
+import 'login_screen.dart';
 
 class DriverHome extends StatefulWidget {
   const DriverHome({super.key});
@@ -107,6 +108,19 @@ class _DriverHomeState extends State<DriverHome> {
         return alertType;
     }
   }
+  Future<void> _logout() async {
+  await _apiService.clearToken();
+
+  if (!mounted) return;
+
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const LoginScreen(),
+    ),
+    (route) => false,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -122,8 +136,14 @@ class _DriverHomeState extends State<DriverHome> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text("Mis Alertas"),
-      ),
+  title: const Text("Mis Alertas"),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.logout),
+      onPressed: _logout,
+    ),
+  ],
+),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(),

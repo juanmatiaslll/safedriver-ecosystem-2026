@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'login_screen.dart';
 
 import '../services/api_service.dart';
 import '../models/alert_model.dart';
@@ -266,7 +267,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
-  void _showSimulateAlertDialog() {
+  void _showSimulateAlertDialog() 
+  {
     final idCtrl = TextEditingController();
 
     String selectedType = "FATIGA";
@@ -410,6 +412,19 @@ class _AlertsScreenState extends State<AlertsScreen> {
       },
     );
   }
+  Future<void> _logout() async {
+  await _apiService.clearToken();
+
+  if (!mounted) return;
+
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const LoginScreen(),
+    ),
+    (route) => false,
+  );
+}
 
   @override
   void dispose() {
@@ -458,6 +473,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
             icon: const Icon(Icons.more_vert),
 
             onSelected: (value) {
+              if (value == "logout") {
+               _logout();
+              }
               if (value == "driver") {
                 _showCreateDriverDialog();
               }
@@ -468,6 +486,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
             },
 
             itemBuilder: (_) => [
+              const PopupMenuItem(
+  value: "logout",
+  child: ListTile(
+    leading: Icon(Icons.logout),
+    title: Text("Cerrar sesión"),
+    contentPadding: EdgeInsets.zero,
+  ),
+),
               const PopupMenuItem(
                 value: "driver",
                 child: ListTile(
