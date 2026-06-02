@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from .database import Base
@@ -18,6 +18,7 @@ class Driver(Base):
     dni = Column(String, unique=True)
     status = Column(String, default="OK")
     alerts = relationship("Alert", back_populates="driver")
+    telemetry_logs = relationship("TelemetryLog", back_populates="driver")
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -28,3 +29,13 @@ class Alert(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     driver = relationship("Driver", back_populates="alerts")
+
+class TelemetryLog(Base):
+    __tablename__ = "telemetry_log"
+    id = Column(Integer, primary_key=True, index=True)
+    driver_id = Column(Integer, ForeignKey("drivers.id"))
+    fatigue_level = Column(Float)
+    heart_rate = Column(Float)
+    speed = Column(Float)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    driver = relationship("Driver", back_populates="telemetry_logs")

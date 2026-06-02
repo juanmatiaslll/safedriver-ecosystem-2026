@@ -96,15 +96,79 @@ def get_drivers_summary(db: Session = Depends(database.get_db),
             models.Alert.driver_id == driver.id,
             models.Alert.is_active == True
         ).count()
+        last = db.query(models.TelemetryLog).filter(
+            models.TelemetryLog.driver_id == driver.id
+        ).order_by(models.TelemetryLog.timestamp.desc()).first()
         result.append({
             "id": driver.id,
             "name": driver.name,
             "status": driver.status,
             "active_alerts_count": active_count,
+            "last_telemetry": {
+                "fatigue_level": last.fatigue_level,
+                "heart_rate": last.heart_rate,
+                "speed": last.speed,
+                "timestamp": last.timestamp.isoformat() if last.timestamp else None,
+            } if last else None,
         })
     return result
 
-# ── 6. Crear alerta (requiere JWT) ──────────────────────────────
+# ── 6. Telemetría IoT ──────────────────────────────────────────
+@app.post("/telemetry", response_model=schemas.TelemetryPostReturn, tags=["IoT"])
+def post_telemetry(data: schemas.TelemetryCreate,
+                   db: Session = Depends(database.get_db),
+                   _: models.User = Depends(get_current_user)):
+    driver = db.query(models.Driver).filter(models.Driver.id == data.driver_id).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Conductor no existe")
+    log = models.TelemetryLog(
+        driver_id=data.driver_id,
+        fatigue_level=data.fatigue_level,
+        heart_rate=data.heart_rate,
+        speed=data.speed,
+    )
+    db.add(log)
+    alert_created = False
+    alert_id = None
+    alert_type = None
+    severity = None
+    triggered_type = None
+    if data.fatigue_level > 80:
+        triggered_type = "FATIGA"
+        severity = "ALTA"
+    elif data.fatigue_level > 60:
+        triggered_type = "FATIGA"
+        severity = "MEDIA"
+    if data.speed > 120:
+        triggered_type = "VELOCIDAD"
+        severity = "ALTA"
+    elif data.speed > 100 and triggered_type is None:
+        triggered_type = "VELOCIDAD"
+        severity = "MEDIA"
+    if triggered_type:
+        alert = models.Alert(
+            driver_id=data.driver_id,
+            alert_type=triggered_type,
+            severity=severity,
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(alert)
+        driver.status = "EN_ALERTA"
+        db.flush()
+        alert_created = True
+        alert_id = alert.id
+        alert_type = alert.alert_type
+        severity = alert.severity
+    db.commit()
+    return {
+        "alert_created": alert_created,
+        "alert_id": alert_id,
+        "alert_type": alert_type,
+        "severity": severity,
+        "driver_status": driver.status,
+    }
+
+# ── 7. Crear alerta (requiere JWT) ──────────────────────────────
 @app.post("/alerts", response_model=schemas.AlertResponse,
           status_code=201, tags=["Alertas"])
 def create_alert(alert: schemas.AlertCreate,
@@ -127,7 +191,7 @@ def create_alert(alert: schemas.AlertCreate,
         "driver_name": driver.name,
     }
 
-# ── 7. Ver alertas activas (requiere JWT) ───────────────────────
+# ── 8. Ver alertas activas (requiere JWT) ───────────────────────
 @app.get("/alerts", response_model=list[schemas.AlertResponse], tags=["Alertas"])
 def get_alerts(date: str | None = Query(None),
                db: Session = Depends(database.get_db),
@@ -154,7 +218,26 @@ def get_alerts(date: str | None = Query(None),
         })
     return result
 
-# ── 8. Resolver alerta (requiere JWT) ───────────────────────────
+# ── 9. Última telemetría por conductor ──────────────────────────
+@app.get("/telemetry/latest/{driver_id}", tags=["IoT"])
+def get_latest_telemetry(driver_id: int,
+                         db: Session = Depends(database.get_db),
+                         _: models.User = Depends(get_current_user)):
+    last = db.query(models.TelemetryLog).filter(
+        models.TelemetryLog.driver_id == driver_id
+    ).order_by(models.TelemetryLog.timestamp.desc()).first()
+    if not last:
+        raise HTTPException(status_code=404, detail="No hay datos de telemetría")
+    return {
+        "id": last.id,
+        "driver_id": last.driver_id,
+        "fatigue_level": last.fatigue_level,
+        "heart_rate": last.heart_rate,
+        "speed": last.speed,
+        "timestamp": last.timestamp.isoformat() if last.timestamp else None,
+    }
+
+# ── 10. Resolver alerta (requiere JWT) ──────────────────────────
 @app.put("/alerts/{id}/resolve", tags=["Alertas"])
 def resolve_alert(id: int,
                   db: Session = Depends(database.get_db),
@@ -178,7 +261,7 @@ def resolve_alert(id: int,
     db.commit()
     return {"msg": "Alerta resuelta", "alert_id": id}
 
-# ── 8. Estado del conductor (para Godot) ────────────────────────
+# ── 11. Estado del conductor (para Godot) ───────────────────────
 @app.get("/drivers/{id}/status", tags=["Conductores"])
 def driver_status(id: int, db: Session = Depends(database.get_db)):
     driver = db.query(models.Driver).filter(models.Driver.id == id).first()

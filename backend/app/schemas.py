@@ -48,8 +48,32 @@ class DriverSummaryResponse(BaseModel):
     name: str
     status: str
     active_alerts_count: int
+    last_telemetry: dict | None = None
     class Config:
         from_attributes = True
+
+class TelemetryCreate(BaseModel):
+    driver_id: int
+    fatigue_level: float
+    heart_rate: float
+    speed: float
+
+class TelemetryResponse(BaseModel):
+    id: int
+    driver_id: int
+    fatigue_level: float
+    heart_rate: float
+    speed: float
+    timestamp: str | None = None
+    class Config:
+        from_attributes = True
+
+class TelemetryPostReturn(BaseModel):
+    alert_created: bool
+    alert_id: int | None = None
+    alert_type: str | None = None
+    severity: str | None = None
+    driver_status: str
 
 class AlertCreate(BaseModel):
     driver_id: int
