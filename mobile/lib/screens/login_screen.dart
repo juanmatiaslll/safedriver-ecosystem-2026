@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import 'register_screen.dart';
-import 'alerts_screen.dart';
+import 'admin_shell.dart';
 import 'driver_home.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const AlertsScreen(),
+            builder: (_) => const AdminShell(),
           ),
         );
       } else if (role == "CONDUCTOR") {

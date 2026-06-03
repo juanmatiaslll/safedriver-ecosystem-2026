@@ -161,8 +161,8 @@ class ApiService {
     }
   }
 
-  Future<List<AlertModel>?> getAlerts() async {
-    final url = Uri.parse('$baseUrl/alerts');
+  Future<List<AlertModel>?> getAlerts({bool todayOnly = false}) async {
+    final url = Uri.parse('$baseUrl/alerts${todayOnly ? "?date=today" : ""}');
 
     final token = await getToken();
 
@@ -308,6 +308,11 @@ class ApiService {
           "Authorization": "Bearer $token",
         },
       );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return [];
+      }
 
       if (response.statusCode == 200) {
         // Aquí convertimos los datos de 'dynamic' a una lista de 'DriverModel'

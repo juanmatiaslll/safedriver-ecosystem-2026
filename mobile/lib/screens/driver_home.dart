@@ -17,6 +17,20 @@ class _DriverHomeState extends State<DriverHome> {
   bool _loading = true;
   List<AlertModel> _alerts = [];
 
+  Future<void> _logout() async {
+    await _apiService.clearToken();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -108,19 +122,6 @@ class _DriverHomeState extends State<DriverHome> {
         return alertType;
     }
   }
-  Future<void> _logout() async {
-  await _apiService.clearToken();
-
-  if (!mounted) return;
-
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const LoginScreen(),
-    ),
-    (route) => false,
-  );
-}
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +137,15 @@ class _DriverHomeState extends State<DriverHome> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-  title: const Text("Mis Alertas"),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.logout),
-      onPressed: _logout,
-    ),
-  ],
-),
+        title: const Text("Mis Alertas"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Cerrar sesión",
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(),
