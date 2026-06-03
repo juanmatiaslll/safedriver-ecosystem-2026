@@ -15,16 +15,21 @@ class _DriverHomeState extends State<DriverHome> {
   final ApiService _apiService = ApiService();
 
   bool _loading = true;
+  List<AlertModel> _alerts = [];
 
-  void _logout() async {
+  Future<void> _logout() async {
     await _apiService.clearToken();
-    if (!context.mounted) return;
-    Navigator.pushReplacement(
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
     );
   }
-  List<AlertModel> _alerts = [];
 
   @override
   void initState() {
