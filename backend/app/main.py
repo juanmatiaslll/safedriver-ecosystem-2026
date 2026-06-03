@@ -128,6 +128,20 @@ def post_telemetry(data: schemas.TelemetryCreate,
         speed=data.speed,
     )
     db.add(log)
+    if data.fatigue_level <= 60 and data.speed <= 100:
+        db.query(models.Alert).filter(
+            models.Alert.driver_id == data.driver_id,
+            models.Alert.is_active == True
+        ).update({"is_active": False})
+        driver.status = "OK"
+        db.commit()
+        return {
+            "alert_created": False,
+            "alert_id": None,
+            "alert_type": None,
+            "severity": None,
+            "driver_status": driver.status,
+        }
     alert_created = False
     alert_id = None
     alert_type = None
@@ -146,19 +160,34 @@ def post_telemetry(data: schemas.TelemetryCreate,
         triggered_type = "VELOCIDAD"
         severity = "MEDIA"
     if triggered_type:
-        alert = models.Alert(
-            driver_id=data.driver_id,
-            alert_type=triggered_type,
-            severity=severity,
-            created_at=datetime.now(timezone.utc),
-        )
-        db.add(alert)
-        driver.status = "EN_ALERTA"
-        db.flush()
-        alert_created = True
-        alert_id = alert.id
-        alert_type = alert.alert_type
-        severity = alert.severity
+        alerta_existente = db.query(models.Alert).filter(
+            models.Alert.driver_id == data.driver_id,
+            models.Alert.is_active == True
+        ).first()
+        if not alerta_existente:
+            alert = models.Alert(
+                driver_id=data.driver_id,
+                alert_type=triggered_type,
+                severity=severity,
+                created_at=datetime.now(timezone.utc),
+            )
+            db.add(alert)
+            driver.status = "EN_ALERTA"
+            db.flush()
+            alert_created = True
+            alert_id = alert.id
+            alert_type = alert.alert_type
+            severity = alert.severity
+        else:
+            severity_order = {"BAJA": 0, "MEDIA": 1, "ALTA": 2, "CRITICA": 3}
+            if severity_order.get(severity, 0) > severity_order.get(alerta_existente.severity, 0):
+                alerta_existente.severity = severity
+                alerta_existente.alert_type = triggered_type
+                db.flush()
+            alert_created = False
+            alert_id = alerta_existente.id
+            alert_type = alerta_existente.alert_type
+            severity = alerta_existente.severity
     db.commit()
     return {
         "alert_created": alert_created,

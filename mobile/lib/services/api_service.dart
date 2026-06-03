@@ -325,4 +325,25 @@ class ApiService {
       return [];
     }
   }
+
+  Future<Map<String, dynamic>?> getLatestTelemetry(int driverId) async {
+    final url = Uri.parse('$baseUrl/telemetry/latest/$driverId');
+    final token = await getToken();
+    if (token == null) return null;
+    try {
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      });
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return null;
+      }
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return null;
+    } catch (e) {
+      print("Error en getLatestTelemetry: $e");
+      return null;
+    }
+  }
 }
