@@ -3,8 +3,7 @@ import '../models/driver_model.dart';
 
 class DriverCard extends StatelessWidget {
   final DriverModel driver;
-  final Map<String, dynamic>? telemetry;
-  const DriverCard({super.key, required this.driver, this.telemetry});
+  const DriverCard({super.key, required this.driver});
 
   Color _fatigueColor(double level) {
     if (level > 80) return Colors.red;
@@ -21,9 +20,13 @@ class DriverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOk = driver.status == 'OK';
-    final fatigue = telemetry?['fatigue_level'];
-    final heart = telemetry?['heart_rate'];
-    final speed = telemetry?['speed'];
+    
+    // Obtenemos la telemetría directamente del modelo
+    final telemetry = driver.lastTelemetry;
+    final fatigue = telemetry?['fatigue_level']?.toDouble();
+    final heart = telemetry?['heart_rate']?.toDouble();
+    final speed = telemetry?['speed']?.toDouble();
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Padding(
@@ -46,15 +49,16 @@ class DriverCard extends StatelessWidget {
                 ),
               ],
             ),
+            // Esto muestra el mini-panel solo si hay telemetría
             if (telemetry != null) ...[
               const Divider(height: 16),
               Row(
                 children: [
-                  _telemetryChip("Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue?.toDouble() ?? 0)),
+                  _telemetryChip("Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue ?? 0)),
                   const SizedBox(width: 8),
                   _telemetryChip("Ritmo", "${heart?.toStringAsFixed(0) ?? "--"} bpm", Colors.blue),
                   const SizedBox(width: 8),
-                  _telemetryChip("Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed?.toDouble() ?? 0)),
+                  _telemetryChip("Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed ?? 0)),
                 ],
               ),
             ],
