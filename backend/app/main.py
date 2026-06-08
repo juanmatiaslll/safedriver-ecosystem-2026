@@ -69,6 +69,38 @@ def login(data: LoginRequest, db: Session = Depends(database.get_db)):
     })
     return {"access_token": token, "token_type": "bearer"}
 
+# ── 2b. Registro de conductor (crea Driver + User vinculados) ───
+@app.post("/auth/register-driver", tags=["Autenticación"])
+def register_driver(data: schemas.DriverRegisterRequest,
+                    db: Session = Depends(database.get_db)):
+    if db.query(models.Driver).filter(models.Driver.dni == data.dni).first():
+        raise HTTPException(status_code=400, detail="DNI ya registrado")
+    if db.query(models.User).filter(models.User.username == data.dni).first():
+        raise HTTPException(status_code=400, detail="Usuario ya registrado con ese DNI")
+    driver = models.Driver(name=data.name, dni=data.dni)
+    db.add(driver); db.flush(); db.refresh(driver)
+    user = models.User(
+        username=data.dni,
+        hashed_password=auth.get_password_hash(data.password),
+        role="CONDUCTOR",
+        driver_id=driver.id,
+    )
+    db.add(user); db.commit()
+    return {"msg": "Conductor registrado exitosamente", "driver_id": driver.id}
+
+# ── 2c. Alternar estado "En Ruta" ──────────────────────────────
+@app.put("/drivers/me/route", response_model=schemas.RouteToggleResponse, tags=["Conductores"])
+def toggle_route(current_user: models.User = Depends(get_current_user),
+                 db: Session = Depends(database.get_db)):
+    if not current_user.driver_id:
+        raise HTTPException(status_code=400, detail="El usuario no tiene un conductor asociado")
+    driver = db.query(models.Driver).filter(models.Driver.id == current_user.driver_id).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Conductor no encontrado")
+    driver.is_on_route = not driver.is_on_route
+    db.commit()
+    return {"msg": "Estado de ruta actualizado", "is_on_route": driver.is_on_route}
+
 # ── 3. Crear conductor ──────────────────────────────────────────
 @app.post("/drivers", status_code=201, tags=["Conductores"])
 def create_driver(driver: schemas.DriverCreate,
@@ -102,7 +134,9 @@ def get_drivers_summary(db: Session = Depends(database.get_db),
         result.append({
             "id": driver.id,
             "name": driver.name,
+            "dni": driver.dni,
             "status": driver.status,
+            "is_on_route": driver.is_on_route,
             "active_alerts_count": active_count,
             "last_telemetry": {
                 "fatigue_level": last.fatigue_level,
@@ -296,4 +330,10 @@ def driver_status(id: int, db: Session = Depends(database.get_db)):
     driver = db.query(models.Driver).filter(models.Driver.id == id).first()
     if not driver:
         raise HTTPException(status_code=404, detail="Conductor no encontrado")
-    return {"driver_id": driver.id, "name": driver.name, "status": driver.status}
+    return {
+        "driver_id": driver.id,
+        "name": driver.name,
+        "dni": driver.dni,
+        "status": driver.status,
+        "is_on_route": driver.is_on_route,
+    }

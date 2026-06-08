@@ -17,6 +17,7 @@ class Driver(Base):
     name = Column(String)
     dni = Column(String, unique=True)
     status = Column(String, default="OK")
+    is_on_route = Column(Boolean, default=False)
     alerts = relationship("Alert", back_populates="driver")
     telemetry_logs = relationship("TelemetryLog", back_populates="driver")
 

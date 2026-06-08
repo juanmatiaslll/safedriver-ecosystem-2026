@@ -12,10 +12,8 @@ class AlertType(str, Enum):
     VELOCIDAD = "VELOCIDAD"
 
 class Severity(str, Enum):
-    BAJA = "BAJA"
     MEDIA = "MEDIA"
     ALTA = "ALTA"
-    CRITICA = "CRITICA"
 
 class UserCreate(BaseModel):
     username: str
@@ -35,18 +33,30 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class DriverRegisterRequest(BaseModel):
+    name: str
+    dni: str
+    password: str
+
+class RouteToggleResponse(BaseModel):
+    msg: str
+    is_on_route: bool
+
 class DriverResponse(BaseModel):
     id: int
     name: str
     dni: str
     status: str
+    is_on_route: bool
     class Config:
         from_attributes = True
 
 class DriverSummaryResponse(BaseModel):
     id: int
     name: str
+    dni: str
     status: str
+    is_on_route: bool
     active_alerts_count: int
     last_telemetry: dict | None = None
     class Config:
