@@ -149,80 +149,99 @@ def get_drivers_summary(db: Session = Depends(database.get_db),
 
 # ── 6. Telemetría IoT ──────────────────────────────────────────
 @app.post("/telemetry", response_model=schemas.TelemetryPostReturn, tags=["IoT"])
-def post_telemetry(data: schemas.TelemetryCreate,
-                   db: Session = Depends(database.get_db),
-                   _: models.User = Depends(get_current_user)):
-    driver = db.query(models.Driver).filter(models.Driver.id == data.driver_id).first()
+def post_telemetry(
+    data: schemas.TelemetryCreate,
+    db: Session = Depends(database.get_db),
+    _: models.User = Depends(get_current_user)
+):
+    driver = db.query(models.Driver).filter(
+        models.Driver.id == data.driver_id
+    ).first()
+
     if not driver:
-        raise HTTPException(status_code=404, detail="Conductor no existe")
+        raise HTTPException(
+            status_code=404,
+            detail="Conductor no existe"
+        )
+
+    # NUEVO: validar que esté en ruta
+    if not driver.is_on_route:
+        raise HTTPException(
+            status_code=400,
+            detail="Driver no en ruta"
+        )
+
+    # Guardar telemetría
     log = models.TelemetryLog(
         driver_id=data.driver_id,
         fatigue_level=data.fatigue_level,
         heart_rate=data.heart_rate,
         speed=data.speed,
     )
+
     db.add(log)
-    if data.fatigue_level <= 60 and data.speed <= 100:
-        db.query(models.Alert).filter(
-            models.Alert.driver_id == data.driver_id,
-            models.Alert.is_active == True
-        ).update({"is_active": False})
-        driver.status = "OK"
-        db.commit()
-        return {
-            "alert_created": False,
-            "alert_id": None,
-            "alert_type": None,
-            "severity": None,
-            "driver_status": driver.status,
-        }
+
     alert_created = False
     alert_id = None
     alert_type = None
     severity = None
+
     triggered_type = None
+
+    # PRIORIDAD: FATIGA > VELOCIDAD
+
     if data.fatigue_level > 80:
         triggered_type = "FATIGA"
         severity = "ALTA"
+
     elif data.fatigue_level > 60:
         triggered_type = "FATIGA"
         severity = "MEDIA"
-    if data.speed > 120:
+
+    elif data.speed > 120:
         triggered_type = "VELOCIDAD"
         severity = "ALTA"
-    elif data.speed > 100 and triggered_type is None:
+
+    elif data.speed > 100:
         triggered_type = "VELOCIDAD"
         severity = "MEDIA"
+
+    # ANTI-SPAM
     if triggered_type:
+
         alerta_existente = db.query(models.Alert).filter(
             models.Alert.driver_id == data.driver_id,
+            models.Alert.alert_type == triggered_type,
             models.Alert.is_active == True
         ).first()
+
         if not alerta_existente:
+
             alert = models.Alert(
                 driver_id=data.driver_id,
                 alert_type=triggered_type,
                 severity=severity,
                 created_at=datetime.now(timezone.utc),
             )
+
             db.add(alert)
+
             driver.status = "EN_ALERTA"
+
             db.flush()
+
             alert_created = True
             alert_id = alert.id
             alert_type = alert.alert_type
             severity = alert.severity
+
         else:
-            severity_order = {"BAJA": 0, "MEDIA": 1, "ALTA": 2, "CRITICA": 3}
-            if severity_order.get(severity, 0) > severity_order.get(alerta_existente.severity, 0):
-                alerta_existente.severity = severity
-                alerta_existente.alert_type = triggered_type
-                db.flush()
-            alert_created = False
             alert_id = alerta_existente.id
             alert_type = alerta_existente.alert_type
             severity = alerta_existente.severity
+
     db.commit()
+
     return {
         "alert_created": alert_created,
         "alert_id": alert_id,
