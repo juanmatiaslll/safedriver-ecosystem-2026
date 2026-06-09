@@ -72,7 +72,7 @@ class _DriverHomeState extends State<DriverHome> {
         return false;
       }
 
-      final alertDate = DateTime.parse(alert.createdAt!).toLocal();
+      final alertDate = alert.createdAt!.toLocal();
 
       return alertDate.year == today.year &&
           alertDate.month == today.month &&
@@ -80,8 +80,8 @@ class _DriverHomeState extends State<DriverHome> {
     }).toList();
 
     filteredAlerts.sort((a, b) {
-      final dateA = DateTime.parse(a.createdAt!).toLocal();
-      final dateB = DateTime.parse(b.createdAt!).toLocal();
+      final dateA = a.createdAt!.toLocal();
+      final dateB = b.createdAt!.toLocal();
 
       return dateB.compareTo(dateA);
     });
@@ -98,16 +98,10 @@ class _DriverHomeState extends State<DriverHome> {
     super.dispose();
   }
 
-  String _formatTime(String? createdAt) {
-    if (createdAt == null) {
-      return "--:--";
-    }
-
-    final date = DateTime.parse(createdAt).subtract(
-      const Duration(hours: 5),
-    );
-
-    return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+  String _formatTime(DateTime? date) {
+    if (date == null) return "--:--";
+    final adjusted = date.subtract(const Duration(hours: 5));
+    return "${adjusted.hour.toString().padLeft(2, '0')}:${adjusted.minute.toString().padLeft(2, '0')}";
   }
 
   IconData _getAlertIcon(String alertType) {
