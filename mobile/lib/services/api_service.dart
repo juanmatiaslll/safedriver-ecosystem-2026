@@ -20,6 +20,33 @@ class ApiService {
     }
   }
 
+  Future<bool> registerDriver(
+    String name,
+    String dni,
+    String password,
+  ) async {
+    final url = Uri.parse('$baseUrl/auth/register-driver');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "name": name,
+          "dni": dni,
+          "password": password,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error en registerDriver: $e");
+      return false;
+    }
+  }
+
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
@@ -183,8 +210,7 @@ class ApiService {
       }
 
       if (response.statusCode == 200) {
-        final List<dynamic> decodedList =
-            jsonDecode(response.body);
+        final List<dynamic> decodedList = jsonDecode(response.body);
 
         return AlertModel.fromJsonList(decodedList);
       }
@@ -294,6 +320,7 @@ class ApiService {
       return false;
     }
   }
+
   Future<List<DriverModel>> getDrivers() async {
     final url = Uri.parse('$baseUrl/drivers');
     final token = await getToken();
@@ -328,21 +355,66 @@ class ApiService {
 
   Future<Map<String, dynamic>?> getLatestTelemetry(int driverId) async {
     final url = Uri.parse('$baseUrl/telemetry/latest/$driverId');
+
     final token = await getToken();
+
     if (token == null) return null;
+
     try {
-      final response = await http.get(url, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      });
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
       if (response.statusCode == 401) {
         await handleUnauthorized();
         return null;
       }
-      if (response.statusCode == 200) return jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
       return null;
     } catch (e) {
       print("Error en getLatestTelemetry: $e");
+      return null;
+    }
+  }
+
+  Future<bool?> toggleRoute() async {
+    final url = Uri.parse('$baseUrl/drivers/me/route');
+
+    final token = await getToken();
+
+    if (token == null) return null;
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return null;
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        return data["is_on_route"];
+      }
+
+      return null;
+    } catch (e) {
+      print("Error toggleRoute: $e");
       return null;
     }
   }
