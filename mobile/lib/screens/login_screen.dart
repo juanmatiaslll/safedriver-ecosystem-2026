@@ -12,29 +12,89 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _usernameController = TextEditingController();
-
   final _passwordController = TextEditingController();
 
   final _apiService = ApiService();
 
+  late TabController _tabController;
+
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _handleLogin() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Completa todos los campos"),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     bool success = await _apiService.login(
-      _usernameController.text.trim(),
-      _passwordController.text.trim(),
+      username,
+      password,
     );
 
     setState(() => _isLoading = false);
 
     if (success) {
+      final token = await _apiService.getToken();
+      print("TOKEN = $token");
+
       final role = await _apiService.getRoleFromToken();
+      print("ROL JWT = $role");
 
       if (!mounted) return;
+
+      bool esConductor = _tabController.index == 0;
+
+      if (esConductor && role != "CONDUCTOR") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Esta cuenta no es de conductor",
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (!esConductor && role != "ADMIN") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Esta cuenta no es de administrador",
+            ),
+          ),
+        );
+        return;
+      }
 
       if (role == "ADMIN") {
         Navigator.pushReplacement(
@@ -43,17 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (_) => const AdminShell(),
           ),
         );
-      } else if (role == "CONDUCTOR") {
+      }
+
+      if (role == "CONDUCTOR") {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => DriverHome(),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Rol no válido"),
+            builder: (_) => const DriverHome(),
           ),
         );
       }
@@ -62,7 +118,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Credenciales incorrectas"),
+          content: Text(
+            "Credenciales incorrectas",
+          ),
         ),
       );
     }
@@ -70,6 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDriverTab = _tabController.index == 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       body: Center(
@@ -113,12 +173,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 35),
+                const SizedBox(height: 25),
+                TabBar(
+                  controller: _tabController,
+                  onTap: (_) {
+                    setState(() {});
+                  },
+                  tabs: const [
+                    Tab(text: "Soy Conductor"),
+                    Tab(text: "Soy Administrador"),
+                  ],
+                ),
+                const SizedBox(height: 25),
                 TextField(
                   controller: _usernameController,
+                  keyboardType:
+                      isDriverTab ? TextInputType.number : TextInputType.text,
                   decoration: InputDecoration(
-                    hintText: "Usuario",
-                    prefixIcon: const Icon(Icons.person),
+                    hintText: isDriverTab ? "DNI" : "Usuario",
+                    prefixIcon: Icon(
+                      isDriverTab ? Icons.badge : Icons.person,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF1F5F9),
                     border: OutlineInputBorder(
@@ -153,13 +228,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       : ElevatedButton(
                           onPressed: _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF2563EB),
+                            backgroundColor: const Color(0xFF2563EB),
                             foregroundColor: Colors.white,
                             elevation: 5,
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
                           child: const Text(
@@ -171,25 +244,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                 ),
-                const SizedBox(height: 15),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const RegisterScreen(),
+                if (isDriverTab) ...[
+                  const SizedBox(height: 15),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "¿No tienes cuenta? Regístrate",
+                      style: TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontSize: 15,
                       ),
-                    );
-                  },
-                  child: const Text(
-                    "¿No tienes cuenta? Regístrate",
-                    style: TextStyle(
-                      color: Color(0xFF2563EB),
-                      fontSize: 15,
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

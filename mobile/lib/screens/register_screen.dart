@@ -9,19 +9,28 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _dniController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   final _apiService = ApiService();
+
   bool _isLoading = false;
 
   void _handleRegister() async {
-    final username = _usernameController.text.trim();
+    final name = _nameController.text.trim();
+    final dni = _dniController.text.trim();
     final password = _passwordController.text.trim();
     final confirm = _confirmPasswordController.text.trim();
 
-    if (username.isEmpty || password.isEmpty) {
+    if (name.isEmpty || dni.isEmpty || password.isEmpty || confirm.isEmpty) {
       _showError("Completa todos los campos");
+      return;
+    }
+
+    if (dni.length != 8) {
+      _showError("El DNI debe tener 8 dígitos");
       return;
     }
 
@@ -37,26 +46,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    bool success = await _apiService.register(username, password);
+    bool success = await _apiService.registerDriver(
+      name,
+      dni,
+      password,
+    );
 
     setState(() => _isLoading = false);
 
     if (success) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Registro exitoso. Ahora inicia sesión."),
+          content: Text(
+            "Conductor registrado correctamente",
+          ),
           backgroundColor: Color(0xFF16A34A),
         ),
       );
+
       Navigator.pop(context);
     } else {
-      _showError("El usuario ya existe o hubo un error");
+      _showError("No se pudo registrar el conductor");
     }
   }
 
   void _showError(String msg) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -104,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  "Regístrate como operador",
+                  "Registro de Conductor",
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 15,
@@ -112,10 +130,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 30),
                 TextField(
-                  controller: _usernameController,
+                  controller: _nameController,
                   decoration: InputDecoration(
-                    hintText: "Usuario",
+                    hintText: "Nombre completo",
                     prefixIcon: const Icon(Icons.person),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _dniController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: "DNI",
+                    prefixIcon: const Icon(Icons.badge),
                     filled: true,
                     fillColor: const Color(0xFFF1F5F9),
                     border: OutlineInputBorder(
@@ -159,7 +192,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: double.infinity,
                   height: 58,
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
                       : ElevatedButton(
                           onPressed: _handleRegister,
                           style: ElevatedButton.styleFrom(
