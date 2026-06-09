@@ -25,6 +25,8 @@ flutter:
 
   assets:
     - assets/alarm.mp3
+    - assets/peligro_fatiga.mp3
+    - assets/peligro_velocidad.mp3
     - assets/images/logo.png
 
 flutter_launcher_icons:
