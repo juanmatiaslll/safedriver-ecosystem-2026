@@ -20,6 +20,9 @@ class _DriverHomeState extends State<DriverHome> {
   Map<String, dynamic>? _telemetry;
   Timer? _telemetryTimer;
 
+  String _driverName = "";
+  String _driverDni = "";
+
   Future<void> _logout() async {
     await _apiService.clearToken();
 
@@ -37,17 +40,53 @@ class _DriverHomeState extends State<DriverHome> {
   @override
   void initState() {
     super.initState();
+
+    _loadDriverInfo();
     _loadAlerts();
     _loadTelemetry();
-    _telemetryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _loadTelemetry());
+
+    _telemetryTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) {
+        _loadTelemetry();
+        _loadAlerts();
+      },
+    );
+  }
+
+  Future<void> _loadDriverInfo() async {
+    final driverId = await _apiService.getDriverIdFromToken();
+
+    if (driverId == null) return;
+
+    final drivers = await _apiService.getDrivers();
+
+    try {
+      final driver = drivers.firstWhere(
+        (d) => d.id == driverId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _driverName = driver.name;
+        _driverDni = driver.dni;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadTelemetry() async {
     final driverId = await _apiService.getDriverIdFromToken();
+
     if (driverId == null) return;
-    final t = await _apiService.getLatestTelemetry(driverId);
+
+    final telemetry = await _apiService.getLatestTelemetry(driverId);
+
     if (!mounted) return;
-    setState(() => _telemetry = t);
+
+    setState(() {
+      _telemetry = telemetry;
+    });
   }
 
   Future<void> _loadAlerts() async {
@@ -173,17 +212,20 @@ class _DriverHomeState extends State<DriverHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(status, style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: color,
-          )),
+          Text(status,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: color,
+              )),
           const SizedBox(height: 14),
           Row(
             children: [
               SizedBox(
                 width: 90,
-                child: Text("FATIGA", style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                child: Text("FATIGA",
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Expanded(
                 child: ClipRRect(
@@ -198,7 +240,8 @@ class _DriverHomeState extends State<DriverHome> {
               ),
               const SizedBox(width: 12),
               Text("${fatigue.toStringAsFixed(0)}%",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: color)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 20, color: color)),
             ],
           ),
           const SizedBox(height: 10),
@@ -206,10 +249,13 @@ class _DriverHomeState extends State<DriverHome> {
             children: [
               SizedBox(
                 width: 90,
-                child: Text("RITMO", style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                child: Text("RITMO",
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Text("${heart.toStringAsFixed(0)} BPM",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 20)),
             ],
           ),
           const SizedBox(height: 10),
@@ -217,11 +263,19 @@ class _DriverHomeState extends State<DriverHome> {
             children: [
               SizedBox(
                 width: 90,
-                child: Text("VELOCIDAD", style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                child: Text("VELOCIDAD",
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Text("${speed.toStringAsFixed(0)} km/h",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20,
-                      color: speed > 120 ? Colors.red : speed > 100 ? Colors.orange : Colors.black)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: speed > 120
+                          ? Colors.red
+                          : speed > 100
+                              ? Colors.orange
+                              : Colors.black)),
             ],
           ),
         ],
@@ -270,6 +324,17 @@ class _DriverHomeState extends State<DriverHome> {
             )
           : Column(
               children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    "Hola, $_driverName - DNI: $_driverDni",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 _buildTelemetryPanel(),
                 Expanded(
                   child: !hasAlerts && isGreen
