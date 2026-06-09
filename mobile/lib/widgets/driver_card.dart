@@ -24,43 +24,59 @@ class DriverCard extends StatelessWidget {
     final fatigue = telemetry?['fatigue_level'];
     final heart = telemetry?['heart_rate'];
     final speed = telemetry?['speed'];
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+
+    // Usamos un Stack para poder posicionar el icono de ruta arriba a la derecha
+    return Stack(
+      children: [
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.person, color: isOk ? Colors.green : Colors.red),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  children: [
+                    Icon(Icons.person, color: isOk ? Colors.green : Colors.red),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('DNI: ${driver.dni} - ${driver.status}'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (telemetry != null) ...[
+                  const Divider(height: 16),
+                  Row(
                     children: [
-                      Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('DNI: ${driver.dni} - ${driver.status}'),
+                      _telemetryChip("Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue?.toDouble() ?? 0)),
+                      const SizedBox(width: 8),
+                      _telemetryChip("Ritmo", "${heart?.toStringAsFixed(0) ?? "--"} bpm", Colors.blue),
+                      const SizedBox(width: 8),
+                      _telemetryChip("Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed?.toDouble() ?? 0)),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
-            if (telemetry != null) ...[
-              const Divider(height: 16),
-              Row(
-                children: [
-                  _telemetryChip("Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue?.toDouble() ?? 0)),
-                  const SizedBox(width: 8),
-                  _telemetryChip("Ritmo", "${heart?.toStringAsFixed(0) ?? "--"} bpm", Colors.blue),
-                  const SizedBox(width: 8),
-                  _telemetryChip("Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed?.toDouble() ?? 0)),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
-      ),
+        // MT.5: Indicador visual de ruta
+        Positioned(
+          top: 15,
+          right: 20,
+          child: Icon(
+            driver.isOnRoute ? Icons.location_on : Icons.location_off,
+            color: driver.isOnRoute ? Colors.blue : Colors.grey,
+            size: 20,
+          ),
+        ),
+      ],
     );
   }
 

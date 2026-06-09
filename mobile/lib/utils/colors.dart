@@ -8,7 +8,8 @@ Color severityToColor(String severity) {
     case 'MEDIA':
       return Colors.orange;
 
-    case 'ALTA':
+    case 'ALTA': 
+      return Colors.red;
     case 'CRITICA':
     case 'HIGH':
       return Colors.red;

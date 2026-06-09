@@ -4,8 +4,8 @@ class AlertModel {
   final String alertType;
   final String severity;
   final bool isActive;
-  final String? createdAt;
-  final String? driverName;
+  final DateTime? createdAt; // Cambiamos de String? a DateTime?
+  final String driverName;   // Lo hacemos no nulo para evitar errores de UI
 
   AlertModel({
     required this.id,
@@ -14,7 +14,7 @@ class AlertModel {
     required this.severity,
     required this.isActive,
     this.createdAt,
-    this.driverName,
+    required this.driverName,
   });
 
   factory AlertModel.fromJson(Map<String, dynamic> json) {
@@ -24,8 +24,11 @@ class AlertModel {
       alertType: json['alert_type'] as String,
       severity: json['severity'] as String,
       isActive: json['is_active'] as bool,
-      createdAt: json['created_at'] as String?,
-      driverName: json['driver_name'] as String?,
+      // Convertimos el String (ISO 8601) a objeto DateTime
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String) 
+          : null,
+      driverName: json['driver_name'] as String? ?? 'Desconocido',
     );
   }
 
