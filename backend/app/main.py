@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from pydantic import BaseModel
@@ -342,6 +343,96 @@ def resolve_alert(id: int,
             driver.status = "OK"
     db.commit()
     return {"msg": "Alerta resuelta", "alert_id": id}
+
+# ── 12. Dashboard stats (solo ADMIN) ────────────────────────────
+@app.get("/dashboard/stats", tags=["Dashboard"])
+def dashboard_stats(_: models.User = Depends(get_current_admin),
+                    db: Session = Depends(database.get_db)):
+    active_drivers = db.query(models.Driver).filter(
+        models.Driver.is_on_route == True
+    ).count()
+
+    now = datetime.now(timezone.utc)
+    start_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_today = start_today + timedelta(days=1)
+
+    today_alerts_count = db.query(models.Alert).filter(
+        models.Alert.created_at >= start_today,
+        models.Alert.created_at < end_today
+    ).count()
+
+    top_driver_data = db.query(
+        models.Alert.driver_id,
+        func.count(models.Alert.id).label('cnt')
+    ).filter(
+        models.Alert.created_at >= start_today,
+        models.Alert.created_at < end_today
+    ).group_by(models.Alert.driver_id).order_by(
+        func.count(models.Alert.id).desc()
+    ).first()
+
+    top_driver = None
+    if top_driver_data:
+        driver = db.query(models.Driver).filter(
+            models.Driver.id == top_driver_data.driver_id
+        ).first()
+        if driver:
+            top_driver = {"name": driver.name, "alert_count": top_driver_data.cnt}
+
+    alerts_by_hour = [0] * 24
+    hour_counts = db.query(
+        func.strftime('%H', models.Alert.created_at).label('hour'),
+        func.count(models.Alert.id).label('cnt')
+    ).filter(
+        models.Alert.created_at >= start_today,
+        models.Alert.created_at < end_today
+    ).group_by('hour').all()
+    for row in hour_counts:
+        h = int(row.hour)
+        if 0 <= h <= 23:
+            alerts_by_hour[h] = row.cnt
+
+    return {
+        "active_drivers": active_drivers,
+        "today_alerts": today_alerts_count,
+        "top_driver": top_driver,
+        "alerts_by_hour": alerts_by_hour,
+    }
+
+# ── 13. Alertas por conductor (con paginación) ──────────────────
+@app.get("/conductores/{driver_id}/alertas", tags=["Conductores"])
+def alertas_por_conductor(driver_id: int,
+                           page: int = Query(1, ge=1),
+                           limit: int = Query(10, ge=1, le=100),
+                           _: models.User = Depends(get_current_user),
+                           db: Session = Depends(database.get_db)):
+    driver = db.query(models.Driver).filter(models.Driver.id == driver_id).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Conductor no encontrado")
+
+    total = db.query(models.Alert).filter(
+        models.Alert.driver_id == driver_id
+    ).count()
+
+    alerts = db.query(models.Alert).filter(
+        models.Alert.driver_id == driver_id
+    ).order_by(models.Alert.created_at.desc()).offset(
+        (page - 1) * limit
+    ).limit(limit).all()
+
+    data = []
+    for alert in alerts:
+        data.append({
+            "id": alert.id,
+            "driver_id": alert.driver_id,
+            "alert_type": alert.alert_type,
+            "severity": alert.severity,
+            "is_active": alert.is_active,
+            "created_at": alert.created_at.isoformat() if alert.created_at else None,
+            "driver_name": driver.name,
+        })
+
+    return {"total": total, "page": page, "limit": limit, "data": data}
 
 # ── 11. Estado del conductor (para Godot) ───────────────────────
 @app.get("/drivers/{id}/status", tags=["Conductores"])
