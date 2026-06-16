@@ -275,31 +275,51 @@ def create_alert(alert: schemas.AlertCreate,
     }
 
 # ── 8. Ver alertas activas (requiere JWT) ───────────────────────
-@app.get("/alerts", response_model=list[schemas.AlertResponse], tags=["Alertas"])
-def get_alerts(date: str | None = Query(None),
+@app.get("/alerts", tags=["Alertas"])
+def get_alerts(page: int = Query(1, ge=1),
+               limit: int = Query(10, ge=1, le=100),
+               date: str | None = Query(None),
                db: Session = Depends(database.get_db),
                _: models.User = Depends(get_current_user)):
+    
+    # 1. Base query: Filtrar solo las alertas que estén activas
     query = db.query(models.Alert).filter(models.Alert.is_active == True)
+    
+    # 2. Filtrado por fecha opcional (?date=today)
     if date == "today":
         now = datetime.now(timezone.utc)
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
         query = query.filter(models.Alert.created_at >= start,
                              models.Alert.created_at < end)
-    alerts = query.all()
-    result = []
+    
+    # 3. Guardar el conteo total antes de aplicar la paginación
+    total_alerts = query.count()
+    
+    # 4. Aplicar la lógica de paginación con offset y limit
+    alerts = query.offset((page - 1) * limit).limit(limit).all()
+    
+    # 5. Construir la lista de resultados inyectando el driver_name correspondiente
+    result_data = []
     for alert in alerts:
         driver = db.query(models.Driver).filter(models.Driver.id == alert.driver_id).first()
-        result.append({
+        result_data.append({
             "id": alert.id,
             "driver_id": alert.driver_id,
             "alert_type": alert.alert_type,
-            "severity": alert.severity,
+            "severity": alert.severity, # Mantiene las reglas de negocio (MEDIA o ALTA)
             "is_active": alert.is_active,
             "created_at": alert.created_at.isoformat() if alert.created_at else None,
             "driver_name": driver.name if driver else None,
         })
-    return result
+    
+    # 6. Retornar el objeto con la estructura exacta requerida
+    return {
+        "total": total_alerts,
+        "page": page,
+        "limit": limit,
+        "data": result_data
+    }
 
 # ── 9. Última telemetría por conductor ──────────────────────────
 @app.get("/telemetry/latest/{driver_id}", tags=["IoT"])
