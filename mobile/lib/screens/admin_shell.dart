@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'dashboard_screen.dart';
 import 'fleet_screen.dart';
 import 'alerts_feed_screen.dart';
 import 'login_screen.dart';
@@ -13,7 +14,11 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   final ApiService _apiService = ApiService();
   int _currentIndex = 0;
-  final List<Widget> _pages = [FleetScreen(), AlertsFeedScreen()];
+  final List<Widget> _pages = const [
+    DashboardScreen(),
+    FleetScreen(),
+    AlertsFeedScreen(),
+  ];
 
   void _logout() async {
     await _apiService.clearToken();
@@ -43,6 +48,7 @@ class _AdminShellState extends State<AdminShell> {
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Flota'),
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Alertas'),
         ],

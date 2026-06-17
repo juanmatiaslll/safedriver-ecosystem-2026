@@ -210,7 +210,8 @@ class ApiService {
       }
 
       if (response.statusCode == 200) {
-        final List<dynamic> decodedList = jsonDecode(response.body);
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        final List<dynamic> decodedList = body['data'] ?? [];
 
         return AlertModel.fromJsonList(decodedList);
       }
@@ -415,6 +416,36 @@ class ApiService {
       return null;
     } catch (e) {
       print("Error toggleRoute: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getDashboardStats() async {
+    final url = Uri.parse('$baseUrl/dashboard/stats');
+    final token = await getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return null;
+      }
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
+      return null;
+    } catch (e) {
+      print("Error getDashboardStats: $e");
       return null;
     }
   }

@@ -20,12 +20,12 @@ class DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isOk = driver.status == 'OK';
     final fatigue = telemetry?['fatigue_level'];
     final heart = telemetry?['heart_rate'];
     final speed = telemetry?['speed'];
 
-    // Usamos un Stack para poder posicionar el icono de ruta arriba a la derecha
     return Stack(
       children: [
         Card(
@@ -43,8 +43,8 @@ class DriverCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text('DNI: ${driver.dni} - ${driver.status}'),
+                          Text(driver.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text('DNI: ${driver.dni} - ${driver.status}', style: theme.textTheme.bodySmall),
                         ],
                       ),
                     ),
@@ -54,11 +54,11 @@ class DriverCard extends StatelessWidget {
                   const Divider(height: 16),
                   Row(
                     children: [
-                      _telemetryChip("Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue?.toDouble() ?? 0)),
+                      _telemetryChip(theme, "Fatiga", "${fatigue?.toStringAsFixed(0) ?? "--"}%", _fatigueColor(fatigue?.toDouble() ?? 0)),
                       const SizedBox(width: 8),
-                      _telemetryChip("Ritmo", "${heart?.toStringAsFixed(0) ?? "--"} bpm", Colors.blue),
+                      _telemetryChip(theme, "Ritmo", "${heart?.toStringAsFixed(0) ?? "--"} bpm", Colors.blue),
                       const SizedBox(width: 8),
-                      _telemetryChip("Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed?.toDouble() ?? 0)),
+                      _telemetryChip(theme, "Vel", "${speed?.toStringAsFixed(0) ?? "--"} km/h", _speedColor(speed?.toDouble() ?? 0)),
                     ],
                   ),
                 ],
@@ -66,7 +66,6 @@ class DriverCard extends StatelessWidget {
             ),
           ),
         ),
-        // MT.5: Indicador visual de ruta
         Positioned(
           top: 15,
           right: 20,
@@ -80,7 +79,7 @@ class DriverCard extends StatelessWidget {
     );
   }
 
-  Widget _telemetryChip(String label, String value, Color color) {
+  Widget _telemetryChip(ThemeData theme, String label, String value, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -91,8 +90,8 @@ class DriverCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
-            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
+            Text(value, style: theme.textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
