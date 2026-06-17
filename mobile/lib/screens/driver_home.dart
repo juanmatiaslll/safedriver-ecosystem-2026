@@ -17,6 +17,7 @@ class _DriverHomeState extends State<DriverHome> {
 
   bool _loading = true;
   bool _isOnRoute = false;
+  bool _audioMuted = false;
   Map<String, dynamic>? _telemetry;
   Timer? _telemetryTimer;
 
@@ -81,8 +82,10 @@ class _DriverHomeState extends State<DriverHome> {
     final speed = (telemetry?['speed'] as num?)?.toDouble() ?? 0;
     final isHigh = fatigue > 80 || speed > 120;
 
-    if (isHigh) {
-      final asset = fatigue > 80 ? 'peligro_fatiga.mp3' : 'peligro_velocidad.mp3';
+    if (isHigh && !_audioMuted) {
+      final asset =
+          fatigue > 80 ? 'peligro_fatiga.mp3' : 'peligro_velocidad.mp3';
+
       await _player.setVolume(1.0);
       await _player.play(AssetSource(asset));
     } else {
@@ -149,7 +152,8 @@ class _DriverHomeState extends State<DriverHome> {
               SizedBox(
                 width: 90,
                 child: Text("FATIGA",
-                    style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Expanded(
                 child: ClipRRect(
@@ -174,7 +178,8 @@ class _DriverHomeState extends State<DriverHome> {
               SizedBox(
                 width: 90,
                 child: Text("RITMO",
-                    style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Text("${heart.toStringAsFixed(0)} BPM",
                   style: const TextStyle(
@@ -187,7 +192,8 @@ class _DriverHomeState extends State<DriverHome> {
               SizedBox(
                 width: 90,
                 child: Text("VELOCIDAD",
-                    style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                    style:
+                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
               ),
               Text("${speed.toStringAsFixed(0)} km/h",
                   style: TextStyle(
@@ -217,14 +223,19 @@ class _DriverHomeState extends State<DriverHome> {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green.shade700, size: 120),
+                  Icon(Icons.check_circle,
+                      color: Colors.green.shade700, size: 120),
                   const SizedBox(height: 20),
                   const Text("Sin alertas activas",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black54)),
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54)),
                 ],
               )
             : Text(_statusText(fatigue, speed),
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: color)),
+                style: TextStyle(
+                    fontSize: 26, fontWeight: FontWeight.bold, color: color)),
       ),
     );
   }
@@ -248,6 +259,21 @@ class _DriverHomeState extends State<DriverHome> {
       appBar: AppBar(
         title: const Text("Mis Alertas"),
         actions: [
+          IconButton(
+            icon: Icon(
+              _audioMuted ? Icons.volume_off : Icons.volume_up,
+            ),
+            tooltip: _audioMuted ? "Activar audio" : "Silenciar audio",
+            onPressed: () async {
+              setState(() {
+                _audioMuted = !_audioMuted;
+              });
+
+              if (_audioMuted) {
+                await _player.stop();
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: "Cerrar sesión",
@@ -274,16 +300,28 @@ class _DriverHomeState extends State<DriverHome> {
                 if (!_isOnRoute)
                   Expanded(
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.location_off, size: 80, color: Colors.white54),
-                          const SizedBox(height: 20),
-                          const Text(
-                            "Fuera de ruta",
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white54),
-                          ),
-                        ],
+                      child: AnimatedOpacity(
+                        opacity: 1.0,
+                        duration: const Duration(seconds: 1),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.location_off,
+                              size: 110,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              "Fuera de ruta",
+                              style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   )
@@ -299,15 +337,22 @@ class _DriverHomeState extends State<DriverHome> {
                       height: 64,
                       child: ElevatedButton.icon(
                         onPressed: _toggleRoute,
-                        icon: Icon(_isOnRoute ? Icons.stop_circle : Icons.play_circle_fill, size: 32),
+                        icon: Icon(
+                            _isOnRoute
+                                ? Icons.stop_circle
+                                : Icons.play_circle_fill,
+                            size: 32),
                         label: Text(
                           _isOnRoute ? "TERMINAR RUTA" : "INICIAR RUTA",
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isOnRoute ? Colors.red : Colors.green,
+                          backgroundColor:
+                              _isOnRoute ? Colors.red : Colors.green,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18)),
                         ),
                       ),
                     ),
