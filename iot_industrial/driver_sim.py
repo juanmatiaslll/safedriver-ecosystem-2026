@@ -22,11 +22,17 @@ def login():
     return response.json()["access_token"]
 
 def send_telemetry(jwt_token, driver_id):
+    # Generar coordenadas simuladas dentro de Lima Metropolitana
+    latitude = round(random.uniform(-12.20, -12.06), 6)
+    longitude = round(random.uniform(-77.10, -76.90), 6)
+
     payload = {
         "driver_id": driver_id,
         "fatigue_level": random.randint(10, 100),
         "heart_rate": random.randint(60, 120),
-        "speed": random.randint(0, 140)
+        "speed": random.randint(0, 140),
+        "latitude": latitude,   # Agregado
+        "longitude": longitude  # Agregado
     }
 
     try:
@@ -42,7 +48,7 @@ def send_telemetry(jwt_token, driver_id):
             return False
         
         response.raise_for_status()
-        print(f"[+] Datos enviados: {payload}")
+        print(f"[+] Datos enviados con GPS: {payload}")
         return True
         
     except requests.exceptions.RequestException as e:
