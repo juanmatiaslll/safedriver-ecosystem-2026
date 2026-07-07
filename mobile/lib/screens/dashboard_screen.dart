@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,14 +18,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   int _activeDrivers = 0;
   int _todayAlerts = 0;
-  Map<String, dynamic>? _topDriver;
-  List<int> _alertsByHour = List<int>.filled(24, 0);
+  List<Map<String, dynamic>> _alertsByDriver = [];
+
+  static const _driverColors = [
+    SafeDriverTheme.accent,
+    SafeDriverTheme.primary,
+    Color(0xFFE65100),
+    Color(0xFF7B1FA2),
+    Color(0xFF00897B),
+  ];
 
   @override
   void initState() {
     super.initState();
     _loadStats();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _loadStats());
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _loadStats());
   }
 
   Future<void> _loadStats() async {
@@ -37,10 +45,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _activeDrivers = data['active_drivers'] ?? 0;
       _todayAlerts = data['today_alerts'] ?? 0;
-      _topDriver = data['top_driver'];
-      final raw = data['alerts_by_hour'] as List?;
-      if (raw != null) {
-        _alertsByHour = raw.cast<int>();
+      final driverRaw = data['alerts_by_driver'] as List?;
+      if (driverRaw != null) {
+        _alertsByDriver = driverRaw.cast<Map<String, dynamic>>();
       }
       _loading = false;
     });
@@ -54,111 +61,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Dashboard")),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildKpiRow(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Alertas por hora",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: _buildBarChart(),
-                  ),
-                ],
-              ),
+    return _loading
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildKpiRow(),
+                const SizedBox(height: 24),
+                _buildDriverChartSection(),
+              ],
             ),
-    );
+          );
   }
 
   Widget _buildKpiRow() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 600;
-        if (isWide) {
-          return Row(
-            children: [
-              Expanded(child: _kpiCard("Conductores en ruta", _activeDrivers.toString(), Icons.person, Colors.blue)),
-              const SizedBox(width: 12),
-              Expanded(child: _kpiCard("Alertas hoy", _todayAlerts.toString(), Icons.warning, Colors.red)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _kpiCard(
-                  "Top conductor",
-                  _topDriver != null ? "${_topDriver!['name']} (${_topDriver!['alert_count']})" : "N/A",
-                  Icons.person,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          );
-        }
-        return Column(
-          children: [
-            Row(
-              children: [
-                Expanded(child: _kpiCard("Conductores en ruta", _activeDrivers.toString(), Icons.person, Colors.blue)),
-                const SizedBox(width: 12),
-                Expanded(child: _kpiCard("Alertas hoy", _todayAlerts.toString(), Icons.warning, Colors.red)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _kpiCard(
-              "Conductor con más alertas",
-              _topDriver != null ? "${_topDriver!['name']} (${_topDriver!['alert_count']})" : "N/A",
-              Icons.person,
-              Colors.orange,
-            ),
-          ],
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Expanded(child: _kpiCard("En ruta", _activeDrivers.toString(), Icons.person, SafeDriverTheme.accent)),
+          const SizedBox(width: 8),
+          Expanded(child: _kpiCard("Alertas hoy", _todayAlerts.toString(), Icons.warning, SafeDriverTheme.alta)),
+        ],
+      ),
     );
   }
 
   Widget _kpiCard(String title, String value, IconData icon, Color color) {
     return Card(
-      elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(14),
+        child: Row(
           children: [
-            Row(
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 12, color: SafeDriverTheme.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: SafeDriverTheme.textPrimary),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
             ),
           ],
         ),
@@ -166,9 +124,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBarChart() {
-    final maxY = _alertsByHour.reduce((a, b) => a > b ? a : b).toDouble().clamp(1, double.infinity);
+  Widget _buildDriverChartSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Alertas por conductor (hoy)",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: SafeDriverTheme.textPrimary)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 220,
+              child: _buildDriverBarChart(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildDriverBarChart() {
+    if (_alertsByDriver.isEmpty) {
+      return Center(
+        child: Text("Sin datos", style: TextStyle(fontSize: 14, color: SafeDriverTheme.textSecondary)),
+      );
+    }
+    final maxVal = _alertsByDriver
+        .map((d) => (d['alert_count'] as int?) ?? 0)
+        .reduce((a, b) => a > b ? a : b);
+    final maxY = maxVal.toDouble().clamp(1.0, double.infinity);
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
@@ -179,13 +164,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 28,
+              reservedSize: 44,
               getTitlesWidget: (value, meta) {
-                final hours = [0, 6, 12, 18, 23];
-                if (hours.contains(value.toInt())) {
-                  return Text(
-                    value.toInt().toString(),
-                    style: const TextStyle(fontSize: 11),
+                final idx = value.toInt();
+                if (idx >= 0 && idx < _alertsByDriver.length) {
+                  final name = _alertsByDriver[idx]['driver_name'] as String? ?? '';
+                  final count = _alertsByDriver[idx]['alert_count'] as int? ?? 0;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      "$name\n$count alertas",
+                      style: const TextStyle(fontSize: 11),
+                      textAlign: TextAlign.center,
+                    ),
                   );
                 }
                 return const SizedBox.shrink();
@@ -195,13 +186,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 32,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  value.toInt().toString(),
-                  style: const TextStyle(fontSize: 11),
-                );
-              },
+              reservedSize: 28,
+              getTitlesWidget: (value, meta) =>
+                  Text(value.toInt().toString(), style: const TextStyle(fontSize: 11)),
             ),
           ),
           topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -212,16 +199,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: 1,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: SafeDriverTheme.surface,
+            strokeWidth: 1,
+          ),
         ),
-        barGroups: List.generate(24, (i) {
+        barGroups: List.generate(_alertsByDriver.length, (i) {
+          final count = (_alertsByDriver[i]['alert_count'] as int?) ?? 0;
           return BarChartGroupData(
             x: i,
             barRods: [
               BarChartRodData(
-                toY: _alertsByHour[i].toDouble(),
-                color: Colors.red,
-                width: 12,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                toY: count.toDouble(),
+                color: _driverColors[i % _driverColors.length],
+                width: 28,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ],
           );

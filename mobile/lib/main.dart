@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'theme.dart';
 import 'services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin_shell.dart';
@@ -24,12 +25,7 @@ class SafeDriverApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       title: 'SafeDriver Mobile',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-        ),
-      ),
+      theme: SafeDriverTheme.theme,
       home: const AuthCheck(),
     );
   }

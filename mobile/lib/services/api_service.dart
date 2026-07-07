@@ -188,8 +188,8 @@ class ApiService {
     }
   }
 
-  Future<List<AlertModel>?> getAlerts({bool todayOnly = false}) async {
-    final url = Uri.parse('$baseUrl/alerts${todayOnly ? "?date=today" : ""}');
+  Future<Map<String, dynamic>?> getAlerts({bool todayOnly = false}) async {
+    final url = Uri.parse('$baseUrl/alerts${todayOnly ? "?date=today&limit=200" : "?limit=200"}');
 
     final token = await getToken();
 
@@ -212,8 +212,8 @@ class ApiService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(response.body);
         final List<dynamic> decodedList = body['data'] ?? [];
-
-        return AlertModel.fromJsonList(decodedList);
+        final alerts = AlertModel.fromJsonList(decodedList);
+        return {"total": body['total'] ?? 0, "alerts": alerts};
       }
 
       return null;

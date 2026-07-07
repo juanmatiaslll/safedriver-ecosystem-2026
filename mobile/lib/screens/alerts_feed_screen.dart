@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/alert_model.dart';
 import '../widgets/alert_card.dart';
+import '../theme.dart';
 
 class AlertsFeedScreen extends StatefulWidget {
   const AlertsFeedScreen({super.key});
@@ -15,6 +16,7 @@ class _AlertsFeedScreenState extends State<AlertsFeedScreen> {
   final ApiService _apiService = ApiService();
   Timer? _timer;
   List<AlertModel> _alerts = [];
+  int _total = 0;
   bool _loading = true;
 
   @override
@@ -25,10 +27,11 @@ class _AlertsFeedScreenState extends State<AlertsFeedScreen> {
   }
 
   Future<void> _loadAlerts() async {
-    final alerts = await _apiService.getAlerts(todayOnly: true);
+    final result = await _apiService.getAlerts(todayOnly: true);
     if (!mounted) return;
     setState(() {
-      _alerts = alerts ?? [];
+      _alerts = (result?['alerts'] as List<AlertModel>?) ?? [];
+      _total = (result?['total'] as int?) ?? 0;
       _loading = false;
     });
   }
@@ -41,20 +44,38 @@ class _AlertsFeedScreenState extends State<AlertsFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Alertas")),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text(
+            "Alertas activas: $_total",
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: SafeDriverTheme.textSecondary,
+            ),
+          ),
+        ),
+        if (_alerts.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text("Sin alertas activas",
+                  style: TextStyle(fontSize: 15, color: SafeDriverTheme.textSecondary)),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _alerts.length,
               itemBuilder: (context, i) => AlertCard(
                 alert: _alerts[i],
-                onResolve: () async {
-                  await _apiService.resolveAlert(_alerts[i].id);
-                  _loadAlerts();
-                },
               ),
             ),
+          ),
+      ],
     );
   }
 }

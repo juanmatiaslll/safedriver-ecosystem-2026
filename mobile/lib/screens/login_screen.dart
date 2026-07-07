@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'register_screen.dart';
 import 'admin_shell.dart';
 import 'driver_home.dart';
@@ -131,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen>
     final isDriverTab = _tabController.index == 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: SafeDriverTheme.primaryDark,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -162,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen>
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: SafeDriverTheme.primaryDark,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -179,6 +180,9 @@ class _LoginScreenState extends State<LoginScreen>
                   onTap: (_) {
                     setState(() {});
                   },
+                  labelColor: SafeDriverTheme.accent,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: SafeDriverTheme.accent,
                   tabs: const [
                     Tab(text: "Soy Conductor"),
                     Tab(text: "Soy Administrador"),
@@ -228,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen>
                       : ElevatedButton(
                           onPressed: _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor: SafeDriverTheme.accent,
                             foregroundColor: Colors.white,
                             elevation: 5,
                             shape: RoundedRectangleBorder(
@@ -258,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen>
                     child: const Text(
                       "¿No tienes cuenta? Regístrate",
                       style: TextStyle(
-                        color: Color(0xFF2563EB),
+                        color: SafeDriverTheme.accent,
                         fontSize: 15,
                       ),
                     ),

@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'login_screen.dart';
 
 class DriverHome extends StatefulWidget {
   const DriverHome({super.key});
-
   @override
   State<DriverHome> createState() => _DriverHomeState();
 }
@@ -109,101 +109,113 @@ class _DriverHomeState extends State<DriverHome> {
   }
 
   Color _statusColor(double fatigue, double speed) {
-    if (fatigue > 80 || speed > 120) return Colors.red;
-    if (fatigue > 60 || speed > 100) return Colors.orange;
-    return Colors.green;
+    if (fatigue > 80 || speed > 120) return SafeDriverTheme.alta;
+    if (fatigue > 60 || speed > 100) return SafeDriverTheme.media;
+    return SafeDriverTheme.ok;
   }
 
-  bool _isSafe(double fatigue, double speed) {
-    return fatigue <= 60 && speed <= 100;
-  }
-
-  Widget _buildTelemetryPanel() {
-    if (_telemetry == null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        color: Colors.grey.shade100,
-        child: const Text("Esperando datos del sensor...",
-            style: TextStyle(color: Colors.grey, fontSize: 15)),
-      );
-    }
-    final fatigue = (_telemetry!['fatigue_level'] as num?)?.toDouble() ?? 0;
-    final heart = (_telemetry!['heart_rate'] as num?)?.toDouble() ?? 0;
-    final speed = (_telemetry!['speed'] as num?)?.toDouble() ?? 0;
-    final color = _statusColor(fatigue, speed);
-
+  Widget _buildDriverHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      color: color.withOpacity(0.12),
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, bottom: 16, left: 20, right: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            SafeDriverTheme.primaryDark,
+            Color(0xFF283593),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_statusText(fatigue, speed),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                color: color,
-              )),
-          const SizedBox(height: 14),
           Row(
             children: [
-              SizedBox(
-                width: 90,
-                child: Text("FATIGA",
-                    style:
-                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: fatigue / 100,
-                    backgroundColor: Colors.grey.shade300,
-                    color: color,
-                    minHeight: 16,
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                child: Text(
+                  _driverName.isNotEmpty ? _driverName[0].toUpperCase() : "?",
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text("${fatigue.toStringAsFixed(0)}%",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 20, color: color)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              SizedBox(
-                width: 90,
-                child: Text("RITMO",
-                    style:
-                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hola, $_driverName",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "DNI: $_driverDni",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Text("${heart.toStringAsFixed(0)} BPM",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 20)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              SizedBox(
-                width: 90,
-                child: Text("VELOCIDAD",
-                    style:
-                        TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Material(
+                      color: _audioMuted
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(18),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () {
+                          setState(() {
+                            _audioMuted = !_audioMuted;
+                          });
+                          if (_audioMuted) {
+                            _player.stop();
+                          }
+                        },
+                        child: Icon(
+                          _audioMuted ? Icons.volume_off : Icons.volume_up,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Material(
+                      color: SafeDriverTheme.alta,
+                      borderRadius: BorderRadius.circular(18),
+                      elevation: 2,
+                      shadowColor: SafeDriverTheme.alta.withValues(alpha: 0.4),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: _logout,
+                        child: const Icon(Icons.logout, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Text("${speed.toStringAsFixed(0)} km/h",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: speed > 120
-                          ? Colors.red
-                          : speed > 100
-                              ? Colors.orange
-                              : Colors.black)),
             ],
           ),
         ],
@@ -211,31 +223,244 @@ class _DriverHomeState extends State<DriverHome> {
     );
   }
 
-  Widget _buildStatusPanel() {
-    final fatigue = (_telemetry?['fatigue_level'] as num?)?.toDouble() ?? 0;
-    final speed = (_telemetry?['speed'] as num?)?.toDouble() ?? 0;
-    final color = _statusColor(fatigue, speed);
-    final isGreen = _isSafe(fatigue, speed);
+  Widget _buildStatusPill(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Expanded(
-      child: Center(
-        child: isGreen
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle,
-                      color: Colors.green.shade700, size: 120),
-                  const SizedBox(height: 20),
-                  const Text("Sin alertas activas",
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54)),
-                ],
-              )
-            : Text(_statusText(fatigue, speed),
-                style: TextStyle(
-                    fontSize: 26, fontWeight: FontWeight.bold, color: color)),
+  Widget _buildTelemetryCard() {
+    if (_telemetry == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sensors_off, size: 48, color: SafeDriverTheme.textSecondary.withValues(alpha: 0.5)),
+            const SizedBox(height: 12),
+            Text("Esperando datos del sensor...",
+                style: TextStyle(fontSize: 15, color: SafeDriverTheme.textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    final fatigue = (_telemetry!['fatigue_level'] as num?)?.toDouble() ?? 0;
+    final heart = (_telemetry!['heart_rate'] as num?)?.toDouble() ?? 0;
+    final speed = (_telemetry!['speed'] as num?)?.toDouble() ?? 0;
+    final color = _statusColor(fatigue, speed);
+    final statusText = _statusText(fatigue, speed);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: SafeDriverTheme.card,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  children: [
+                    _buildStatusPill(statusText, color),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Icon(Icons.bolt, size: 20, color: SafeDriverTheme.textSecondary),
+                        const SizedBox(width: 6),
+                        Text("FATIGA",
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: SafeDriverTheme.textSecondary,
+                                letterSpacing: 1.5)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "${fatigue.toStringAsFixed(0)}%",
+                          style: TextStyle(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: fatigue / 100,
+                        backgroundColor: Colors.grey.shade200,
+                        color: color,
+                        minHeight: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: SafeDriverTheme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.favorite, size: 26, color: SafeDriverTheme.alta),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "${heart.toStringAsFixed(0)}",
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w700,
+                                    color: SafeDriverTheme.textPrimary,
+                                  ),
+                                ),
+                                Text("BPM",
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: SafeDriverTheme.textSecondary)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: SafeDriverTheme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.speed, size: 26,
+                                    color: speed > 120
+                                        ? SafeDriverTheme.alta
+                                        : speed > 100
+                                            ? SafeDriverTheme.media
+                                            : SafeDriverTheme.primary),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "${speed.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w700,
+                                    color: speed > 120
+                                        ? SafeDriverTheme.alta
+                                        : speed > 100
+                                            ? SafeDriverTheme.media
+                                            : SafeDriverTheme.textPrimary,
+                                  ),
+                                ),
+                                Text("km/h",
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: SafeDriverTheme.textSecondary)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOffRoute() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.location_off,
+            size: 100,
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "Fuera de ruta",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Presiona INICIAR RUTA para comenzar",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -245,121 +470,60 @@ class _DriverHomeState extends State<DriverHome> {
     final fatigue = (_telemetry?['fatigue_level'] as num?)?.toDouble() ?? 0;
     final speed = (_telemetry?['speed'] as num?)?.toDouble() ?? 0;
 
-    Color backgroundColor;
-    if (fatigue > 80 || speed > 120) {
-      backgroundColor = Colors.red.shade50;
-    } else if (fatigue > 60 || speed > 100) {
-      backgroundColor = Colors.orange.shade50;
+    Color bgColor;
+    if (_isOnRoute) {
+      if (fatigue > 80 || speed > 120) {
+        bgColor = SafeDriverTheme.alta.withValues(alpha: 0.06);
+      } else if (fatigue > 60 || speed > 100) {
+        bgColor = SafeDriverTheme.media.withValues(alpha: 0.06);
+      } else {
+        bgColor = SafeDriverTheme.surface;
+      }
     } else {
-      backgroundColor = Colors.green.shade50;
+      bgColor = SafeDriverTheme.primaryDark;
     }
 
     return Scaffold(
-      backgroundColor: _isOnRoute ? backgroundColor : const Color(0xFF0F172A),
-      appBar: AppBar(
-        title: const Text("Mis Alertas"),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _audioMuted ? Icons.volume_off : Icons.volume_up,
-            ),
-            tooltip: _audioMuted ? "Activar audio" : "Silenciar audio",
-            onPressed: () async {
-              setState(() {
-                _audioMuted = !_audioMuted;
-              });
-
-              if (_audioMuted) {
-                await _player.stop();
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Cerrar sesión",
-            onPressed: _logout,
-          ),
-        ],
-      ),
+      backgroundColor: bgColor,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    "Hola, $_driverName - DNI: $_driverDni",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _isOnRoute ? Colors.black : Colors.white,
-                    ),
-                  ),
-                ),
-                if (!_isOnRoute)
+                children: [
+                  _buildDriverHeader(),
                   Expanded(
-                    child: Center(
-                      child: AnimatedOpacity(
-                        opacity: 1.0,
-                        duration: const Duration(seconds: 1),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.location_off,
-                              size: 110,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              "Fuera de ruta",
-                              style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                else ...[
-                  _buildTelemetryPanel(),
-                  _buildStatusPanel(),
-                ],
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    child: _isOnRoute ? _buildTelemetryCard() : _buildOffRoute(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 64,
+                      height: 60,
                       child: ElevatedButton.icon(
                         onPressed: _toggleRoute,
                         icon: Icon(
-                            _isOnRoute
-                                ? Icons.stop_circle
-                                : Icons.play_circle_fill,
-                            size: 32),
+                          _isOnRoute ? Icons.stop_circle : Icons.play_circle_fill,
+                          size: 28,
+                        ),
                         label: Text(
                           _isOnRoute ? "TERMINAR RUTA" : "INICIAR RUTA",
                           style: const TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              _isOnRoute ? Colors.red : Colors.green,
+                          backgroundColor: _isOnRoute ? SafeDriverTheme.alta : SafeDriverTheme.accent,
                           foregroundColor: Colors.white,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
     );
   }
 }

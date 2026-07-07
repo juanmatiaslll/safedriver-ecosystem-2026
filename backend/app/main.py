@@ -207,39 +207,21 @@ def post_telemetry(
         triggered_type = "VELOCIDAD"
         severity = "MEDIA"
 
-    # ANTI-SPAM
+    # Crear alerta si se supera umbral
     if triggered_type:
-
-        alerta_existente = db.query(models.Alert).filter(
-            models.Alert.driver_id == data.driver_id,
-            models.Alert.alert_type == triggered_type,
-            models.Alert.is_active == True
-        ).first()
-
-        if not alerta_existente:
-
-            alert = models.Alert(
-                driver_id=data.driver_id,
-                alert_type=triggered_type,
-                severity=severity,
-                created_at=datetime.now(timezone.utc),
-            )
-
-            db.add(alert)
-
-            driver.status = "EN_ALERTA"
-
-            db.flush()
-
-            alert_created = True
-            alert_id = alert.id
-            alert_type = alert.alert_type
-            severity = alert.severity
-
-        else:
-            alert_id = alerta_existente.id
-            alert_type = alerta_existente.alert_type
-            severity = alerta_existente.severity
+        alert = models.Alert(
+            driver_id=data.driver_id,
+            alert_type=triggered_type,
+            severity=severity,
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(alert)
+        driver.status = "EN_ALERTA"
+        db.flush()
+        alert_created = True
+        alert_id = alert.id
+        alert_type = alert.alert_type
+        severity = alert.severity
 
     db.commit()
 
@@ -282,8 +264,10 @@ def get_alerts(page: int = Query(1, ge=1),
                db: Session = Depends(database.get_db),
                _: models.User = Depends(get_current_user)):
     
-    # 1. Base query: Filtrar solo las alertas que estén activas
-    query = db.query(models.Alert).filter(models.Alert.is_active == True)
+    # 1. Base query: Filtrar solo las alertas que estén activas y ordenar
+    query = db.query(models.Alert).filter(models.Alert.is_active == True).order_by(
+        models.Alert.created_at.desc()
+    )
     
     # 2. Filtrado por fecha opcional (?date=today)
     if date == "today":
@@ -381,6 +365,10 @@ def dashboard_stats(_: models.User = Depends(get_current_admin),
         models.Alert.created_at < end_today
     ).count()
 
+    active_alerts_count = db.query(models.Alert).filter(
+        models.Alert.is_active == True
+    ).count()
+
     top_driver_data = db.query(
         models.Alert.driver_id,
         func.count(models.Alert.id).label('cnt')
@@ -397,7 +385,7 @@ def dashboard_stats(_: models.User = Depends(get_current_admin),
             models.Driver.id == top_driver_data.driver_id
         ).first()
         if driver:
-            top_driver = {"name": driver.name, "alert_count": top_driver_data.cnt}
+            top_driver = {"name": driver.name, "dni": driver.dni, "alert_count": top_driver_data.cnt}
 
     alerts_by_hour = [0] * 24
     hour_counts = db.query(
@@ -412,18 +400,73 @@ def dashboard_stats(_: models.User = Depends(get_current_admin),
         if 0 <= h <= 23:
             alerts_by_hour[h] = row.cnt
 
+    latest_alert_data = db.query(models.Alert).order_by(
+        models.Alert.created_at.desc()
+    ).first()
+
+    latest_alert = None
+    if latest_alert_data:
+        driver = db.query(models.Driver).filter(
+            models.Driver.id == latest_alert_data.driver_id
+        ).first()
+        latest_alert = {
+            "id": latest_alert_data.id,
+            "driver_id": latest_alert_data.driver_id,
+            "driver_name": driver.name if driver else "Desconocido",
+            "alert_type": latest_alert_data.alert_type,
+            "severity": latest_alert_data.severity,
+            "created_at": latest_alert_data.created_at.isoformat() if latest_alert_data.created_at else None,
+        }
+
+    alerts_by_driver = []
+    driver_counts = db.query(
+        models.Alert.driver_id,
+        func.count(models.Alert.id).label('cnt')
+    ).filter(
+        models.Alert.created_at >= start_today,
+        models.Alert.created_at < end_today
+    ).group_by(models.Alert.driver_id).order_by(
+        func.count(models.Alert.id).desc()
+    ).all()
+    for row in driver_counts:
+        driver = db.query(models.Driver).filter(
+            models.Driver.id == row.driver_id
+        ).first()
+        if driver:
+            alerts_by_driver.append({
+                "driver_id": driver.id,
+                "driver_name": driver.name,
+                "alert_count": row.cnt,
+            })
+
+    severity_counts = db.query(
+        models.Alert.severity,
+        func.count(models.Alert.id).label('cnt')
+    ).filter(
+        models.Alert.created_at >= start_today,
+        models.Alert.created_at < end_today
+    ).group_by(models.Alert.severity).all()
+
+    alerts_by_severity = {}
+    for row in severity_counts:
+        alerts_by_severity[row.severity] = row.cnt
+
     return {
         "active_drivers": active_drivers,
         "today_alerts": today_alerts_count,
+        "active_alerts": active_alerts_count,
         "top_driver": top_driver,
+        "latest_alert": latest_alert,
         "alerts_by_hour": alerts_by_hour,
+        "alerts_by_driver": alerts_by_driver,
+        "alerts_by_severity": alerts_by_severity,
     }
 
 # ── 13. Alertas por conductor (con paginación) ──────────────────
 @app.get("/conductores/{driver_id}/alertas", tags=["Conductores"])
 def alertas_por_conductor(driver_id: int,
                            page: int = Query(1, ge=1),
-                           limit: int = Query(10, ge=1, le=100),
+               limit: int = Query(10, ge=1, le=500),
                            _: models.User = Depends(get_current_user),
                            db: Session = Depends(database.get_db)):
     driver = db.query(models.Driver).filter(models.Driver.id == driver_id).first()

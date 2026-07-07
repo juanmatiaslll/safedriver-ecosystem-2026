@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -86,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: SafeDriverTheme.primaryDark,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -117,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: SafeDriverTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -198,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : ElevatedButton(
                           onPressed: _handleRegister,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF16A34A),
+                            backgroundColor: SafeDriverTheme.accent,
                             foregroundColor: Colors.white,
                             elevation: 5,
                             shape: RoundedRectangleBorder(
@@ -220,7 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: const Text(
                     "¿Ya tienes cuenta? Inicia sesión",
                     style: TextStyle(
-                      color: Color(0xFF2563EB),
+                      color: SafeDriverTheme.accent,
                       fontSize: 15,
                     ),
                   ),
