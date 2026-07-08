@@ -3,3 +3,7 @@ venv/
 __pycache__/
 build/
 .dart_tool/
+# Cache y temporales de Godot 3D
+simulation_godot/.godot/
+simulation_godot/.import/
+simulation_godot/export_presets.cfg

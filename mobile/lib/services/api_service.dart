@@ -189,7 +189,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getAlerts({bool todayOnly = false}) async {
-    final url = Uri.parse('$baseUrl/alerts${todayOnly ? "?date=today&limit=200" : "?limit=200"}');
+    final url = Uri.parse('$baseUrl/alerts${todayOnly ? "?date=today&limit=100" : "?limit=100"}');
 
     final token = await getToken();
 
