@@ -25,8 +25,8 @@ class AlertModel {
       severity: json['severity'] as String,
       isActive: json['is_active'] as bool,
       // Convertimos el String (ISO 8601) a objeto DateTime
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'] as String) 
+      createdAt: json['created_at'] != null
+          ? DateTime.parse("${json['created_at']}Z").toLocal()
           : null,
       driverName: json['driver_name'] as String? ?? 'Desconocido',
     );
