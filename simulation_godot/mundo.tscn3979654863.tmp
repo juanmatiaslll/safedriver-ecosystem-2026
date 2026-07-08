@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://ck6k6e6juxgsl"]
+
+[ext_resource type="Script" uid="uid://istingek68p4" path="res://mundo.gd" id="1_6ba58"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_iukla"]
+size = Vector2(100, 100)
+
+[node name="MUNDO" type="Node3D" unique_id=289558900]
+script = ExtResource("1_6ba58")
+
+[node name="SUELO" type="MeshInstance3D" parent="." unique_id=1459015565]
+mesh = SubResource("PlaneMesh_iukla")
+
+[node name="LUZ" type="DirectionalLight3D" parent="." unique_id=1708605256]
+transform = Transform3D(-0.9208324, -0.38981578, 0.010550584, 0.0039888388, 0.0176386, 0.9998365, -0.38993818, 0.92072386, -0.014687285, -0.8138671, 4.413802, -0.19587469)
+
+[node name="CAMARA" type="Camera3D" parent="." unique_id=983215662]
+transform = Transform3D(0.99997246, 0.004452476, -0.0059309783, 0.0059680375, -0.008356929, 0.9999472, 0.0044026757, -0.9999551, -0.008383267, -1.0216653, 11.500358, -0.7467767)
+fov = 153.31186
+
+[node name="HTTPRequest" type="HTTPRequest" parent="." unique_id=833170507]
+
+[node name="Timer" type="Timer" parent="." unique_id=182976483]
+wait_time = 3.0
+autostart = true
+
+[connection signal="timeout" from="Timer" to="." method="_pedir_alertas_al_backend"]
