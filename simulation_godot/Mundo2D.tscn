@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c61nk66f5mxni"]
+
+[ext_resource type="Script" uid="uid://k15u18ckd1sj" path="res://mundo_2d.gd" id="1_cer6h"]
+[ext_resource type="Texture2D" uid="uid://c4422dn13itfd" path="res://mapa1.png" id="2_cer6h"]
+
+[node name="mundo" type="Node2D" unique_id=937509596]
+script = ExtResource("1_cer6h")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=584468115]
+position = Vector2(640, 360)
+scale = Vector2(1.2804878, 1.356)
+texture = ExtResource("2_cer6h")
+
+[node name="Timer" type="Timer" parent="." unique_id=1056692723]

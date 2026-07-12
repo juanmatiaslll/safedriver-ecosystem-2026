@@ -1,411 +1,219 @@
-# 🚗 SafeDriver Ecosystem-2026
+🚗 SafeDriver Ecosystem-2026
 
 Sistema inteligente de monitoreo y alertas tempranas para conductores, desarrollado como ecosistema distribuido utilizando FastAPI, SQLite, JWT, Flutter y simulación IoT/Godot.
 
----
 
-# 📌 Descripción
+📌 Descripción
 
 SafeDriver es una plataforma orientada a la prevención de accidentes mediante monitoreo de conductores y generación de alertas en tiempo real.
 
 El sistema permite:
 
-- Registro y autenticación de usuarios
-- Gestión de conductores
-- Generación de alertas críticas
-- Consulta del estado de conductores
-- Integración con aplicaciones móviles e IoT
-- API REST documentada automáticamente con Swagger
 
----
+Registro y autenticación de usuarios
+Gestión de conductores
+Generación de alertas críticas
+Consulta del estado de conductores
+Integración con aplicaciones móviles e IoT
+API REST documentada automáticamente con Swagger
 
-# 🛠️ Tecnologías utilizadas
 
-## Backend
-- Python 3.12
-- FastAPI
-- SQLAlchemy
-- SQLite
-- JWT Authentication
-- Passlib + Bcrypt
-- Uvicorn
 
-## Frontend / Mobile
-- Flutter
+🛠️ Tecnologías utilizadas
 
-## Simulación / IoT
-- Godot
-- Python IoT Simulator
+Backend: Python 3.12, FastAPI, SQLAlchemy, SQLite, JWT, Passlib + Bcrypt, Uvicorn
+Mobile: Flutter
+IoT / Simulación: Python IoT Simulator (requests) — envía telemetrías reales al backend · Godot — simulación visual 2D (estilo mapa) que muestra los puntos donde se generan las alertas
 
----
 
-# 📁 Estructura del proyecto
+📁 Estructura del proyecto
 
-```text
-SafeDriver-Ecosystem-2026/
+textSafeDriver-Ecosystem-2026/
 │
 ├── backend/
-│   ├── app/
-│   │   ├── auth.py
-│   │   ├── database.py
-│   │   ├── main.py
-│   │   ├── models.py
-│   │   └── schemas.py
-│   │
-│   ├── requirements.txt
-│   ├── safedriver.db
-│   └── venv/
+│   ├── app/            # auth.py, database.py, main.py, models.py, schemas.py
+│   ├── test/
+│   ├── check_alerts.py
+│   ├── pytest.ini
+│   └── safedriver.db
 │
 ├── iot_industrial/
 │   └── driver_sim.py
 │
-├── mobile/
-│   └── README.md
+├── mobile/              # proyecto Flutter estándar (lib/, android/, ios/, etc.)
 │
 ├── simulation_godot/
 │   └── project.godot
 │
+├── venv/
+├── requirements.txt
 └── README.md
-```
 
----
 
-# ⚙️ Instalación del Backend
+⚙️ Instalación y ejecución del Backend
 
-## 1. Clonar repositorio
+1. Clonar repositorio
 
-```bash
-git clone https://github.com/juanmatiaslll/safedriver-ecosystem-2026.git
+bashgit clone https://github.com/juanmatiaslll/safedriver-ecosystem-2026.git
 cd safedriver-ecosystem-2026
-```
 
----
+2. Crear y activar entorno virtual (raíz del proyecto)
 
-## 2. Crear entorno virtual
+Linux / Ubuntu
 
-### Linux / Ubuntu
-
-```bash
-cd backend
-python3 -m venv venv
+bashpython3 -m venv venv
 source venv/bin/activate
-```
 
-### Windows
+Windows (PowerShell)
 
-```powershell
-cd backend
-python -m venv venv
-venv\Scripts\activate
-```
+powershellpy -m venv venv
+.\venv\Scripts\Activate.ps1
 
----
+Si la ejecución de scripts está bloqueada:
 
-## 3. Instalar dependencias
+powershellSet-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\venv\Scripts\Activate.ps1
 
-```bash
-pip install -r requirements.txt
-```
+3. Instalar dependencias
 
----
+bashpip install -r requirements.txt
 
-# 🔧 Dependencias importantes
+4. Ejecutar el servidor
 
-En `requirements.txt` se recomienda:
+Desde la carpeta backend:
 
-```txt
-fastapi
-uvicorn
-sqlalchemy
-python-jose
-passlib
-bcrypt==4.0.1
-python-multipart
-```
+bashuvicorn app.main:app --reload
 
----
+Servidor: http://127.0.0.1:8000 · Swagger: http://127.0.0.1:8000/docs
 
-# ▶️ Ejecutar servidor
+5. Pruebas automatizadas (opcional)
 
-Desde la carpeta `backend`:
+bashcd backend
+pytest
 
-```bash
-uvicorn app.main:app --reload
-```
 
-Servidor disponible en:
+📡 Ejecutar simulador IoT
 
-```text
-http://127.0.0.1:8000
-```
+Con el backend corriendo, en una nueva terminal (con el venv activado):
 
----
+bashcd iot_industrial
+python driver_sim.py
 
-# 📚 Swagger UI
+Pide por consola, en orden: DNI del conductor, contraseña del conductor y ID del conductor. Al validar contra el backend, empieza a enviar telemetrías (POST /telemetry) solo para ese conductor, generando alertas automáticamente.
 
-Documentación automática:
 
-```text
-http://127.0.0.1:8000/docs
-```
+⚠️ El conductor debe existir previamente (creado vía app Flutter, /auth/register-driver, o por un ADMIN en /drivers).
 
-OpenAPI:
 
-```text
-http://127.0.0.1:8000/openapi.json
-```
 
----
 
-# 🔐 Autenticación JWT
+🗺️ Simulación visual (Godot) — opcional
 
-La API utiliza JWT Bearer Authentication.
+Simulación 2D estilo mapa que muestra en tiempo real los puntos donde se generan las alertas. No es necesaria para que el resto del sistema funcione.
 
-## Flujo
 
-1. Registrar usuario
-2. Iniciar sesión
-3. Obtener token JWT
-4. Autorizar en Swagger
-5. Consumir endpoints protegidos
+Abrir Godot Engine
+Importar simulation_godot/project.godot
+Ejecutar la escena principal
 
----
 
-# 👤 Registro de usuario
 
-## Endpoint
+📱 Instalación y ejecución de Flutter (Mobile)
 
-```http
-POST /auth/register
-```
+Linux / Ubuntu
 
-## Body
+bashgit clone https://github.com/flutter/flutter.git -b stable
+export PATH="$PATH:`pwd`/flutter/bin"   # agregar a ~/.bashrc para que persista
+flutter doctor
 
-```json
-{
-  "username": "jose",
-  "password": "1234"
+Windows
+Descargar el SDK desde docs.flutter.dev/get-started/install/windows, descomprimir y agregar flutter\bin al PATH del sistema. Luego:
+
+powershellflutter doctor
+
+Instalar lo que flutter doctor indique como faltante. Luego, en ambos sistemas:
+
+bashcd mobile
+flutter pub get
+flutter run
+
+
+⚠️ Importante: la app móvil solo permite registrar conductores, no administradores. Para crear un ADMIN, ver la siguiente sección.
+
+
+
+
+🛡️ Registro de usuario ADMIN (desde el backend)
+
+Con el servidor corriendo, ir a http://127.0.0.1:8000/docs, abrir el endpoint POST /auth/register, usar Try it out y completar:
+
+json{
+  "username": "string",
+  "password": "string",
+  "role": "ADMIN",
+  "driver_id": 0
 }
-```
 
----
+username y password pueden ser cualquier valor, role se cambia a "ADMIN" y driver_id se deja en 0. Ejecutar (Execute) y luego iniciar sesión normalmente con esas credenciales.
 
-# 🔑 Login
 
-## Endpoint
+🔐 Autenticación JWT
 
-```http
-POST /auth/login
-```
+Flujo: registrar usuario → login → obtener token → Authorize en Swagger (pegar solo el token) → consumir endpoints protegidos.
 
-## Body
+Endpoints de autenticación
 
-```json
-{
-  "username": "jose",
-  "password": "1234"
-}
-```
+MétodoEndpointBodyNotasPOST/auth/register{"username","password","role","driver_id"}role: CONDUCTOR o ADMINPOST/auth/login{"username","password"}Devuelve {"access_token","token_type"}POST/auth/register-driver{"name","dni","password"}Registra conductor + usuario en un paso (usado por la app Flutter)
 
-## Respuesta
 
-```json
-{
-  "access_token": "TOKEN_JWT",
-  "token_type": "bearer"
-}
-```
+🚘 Conductores
 
----
+MétodoEndpointRequiere JWTDescripciónGET/driversNoListar conductoresPOST/driversSíCrear conductor — body: {"name","dni"}GET/drivers/summarySíConductores + alertas activas + última telemetríaGET/drivers/{id}/statusNoEstado de un conductorPUT/drivers/me/routeSíActiva/desactiva la ruta del conductor autenticadoGET/conductores/{driver_id}/alertasSíAlertas del conductor (query: page, limit)
 
-# 🛡️ Uso del token JWT
 
-En Swagger:
+📡 IoT / Telemetría
 
-1. Presionar botón `Authorize`
-2. Pegar SOLO el token JWT
-3. Authorize
-4. Close
+MétodoEndpointRequiere JWTDescripciónPOST/telemetryNoRecibe telemetría — body: {"driver_id","fatigue_level","heart_rate","speed"}. Puede generar una alerta automáticamente.GET/telemetry/latest/{driver_id}SíÚltima telemetría registrada de un conductor
 
----
 
-# 🚘 Conductores
+🚨 Alertas
 
-## Crear conductor
+MétodoEndpointRequiere JWTDescripciónPOST/alertsSíCrear alerta — body: {"driver_id","alert_type","severity"}GET/alertsSíListar alertas (query: page, limit, date)PUT/alerts/{id}/resolveSíMarca la alerta como resuelta
 
-### Endpoint
 
-```http
-POST /drivers
-```
+📊 Dashboard
 
-### Requiere JWT
+MétodoEndpointRequiere JWTDescripciónGET/dashboard/statsSíMétricas generales del sistema (conductores, alertas activas, etc.)
 
-### Body
 
-```json
-{
-  "name": "JoseDriver",
-  "dni": "12345678"
-}
-```
+🧠 Arquitectura del sistema
 
----
-
-## Obtener conductores
-
-### Endpoint
-
-```http
-GET /drivers
-```
-
----
-
-## Estado del conductor
-
-### Endpoint
-
-```http
-GET /drivers/{id}/status
-```
-
----
-
-# 🚨 Alertas
-
-## Crear alerta
-
-### Endpoint
-
-```http
-POST /alerts
-```
-
-### Requiere JWT
-
-### Body
-
-```json
-{
-  "driver_id": 1,
-  "alert_type": "FATIGA",
-  "severity": "HIGH"
-}
-```
-
----
-
-## Obtener alertas activas
-
-### Endpoint
-
-```http
-GET /alerts
-```
-
-### Requiere JWT
-
----
-
-# 🧠 Arquitectura del sistema
-
-```text
-Flutter App
+textFlutter App
      │
      ▼
 FastAPI Backend ─── SQLite
      │
-     ├── JWT Auth
-     ├── Drivers
+     ├── JWT Auth (register / login / register-driver)
+     ├── Drivers (CRUD, summary, status, route toggle)
+     ├── Telemetry (IoT)
      ├── Alerts
+     ├── Dashboard
      │
      ▼
 IoT Simulator / Godot
-```
 
----
 
-# 🧪 Pruebas realizadas
+👨‍💻 Equipo
 
-## Backend validado
 
-- Registro de usuarios
-- Login JWT
-- Protección de rutas
-- Creación de conductores
-- Creación de alertas
-- Validación de conductor inexistente
-- Persistencia SQLite
+Juan Matías Lomas — Backend Core
+Jose Miguel Pacara Ponciano — QA, README y Testing
+Mateo Loaiza Gonzales — Mobile / Flutter
+Jordy Bujaico Bustillos — Simulación / IoT
 
----
 
-# 🌐 Ejemplos cURL
 
-## Registrar usuario
+📄 Licencia
 
-```bash
-curl -X POST "http://127.0.0.1:8000/auth/register" \
--H "Content-Type: application/json" \
--d '{
-  "username":"jose",
-  "password":"1234"
-}'
-```
-
----
-
-## Login
-
-```bash
-curl -X POST "http://127.0.0.1:8000/auth/login" \
--H "Content-Type: application/json" \
--d '{
-  "username":"jose",
-  "password":"1234"
-}'
-```
-
----
-
-## Crear conductor
-
-```bash
-curl -X POST "http://127.0.0.1:8000/drivers" \
--H "Authorization: Bearer TOKEN_JWT" \
--H "Content-Type: application/json" \
--d '{
-  "name":"JoseDriver",
-  "dni":"12345678"
-}'
-```
-
----
-
-## Crear alerta
-
-```bash
-curl -X POST "http://127.0.0.1:8000/alerts" \
--H "Authorization: Bearer TOKEN_JWT" \
--H "Content-Type: application/json" \
--d '{
-  "driver_id":1,
-  "alert_type":"FATIGA",
-  "severity":"HIGH"
-}'
-```
----
-
-# 👨‍💻 Equipo
-
-- Juan Matías Lomas— Backend Core
-- Jose Miguel Pacara Ponciano— QA, README y Testing
-- Mateo Loaiza Gonzales— Mobile / Flutter
-- Jordy Bujaico Bustillos— Simulación / IoT
-
----
-
-# 📄 Licencia
-
-Proyecto académico — 2026  
+Proyecto académico — 2026
 Universidad Nacional Mayor de San Marcos / Curso de Desarrollo Basado en Plataformas

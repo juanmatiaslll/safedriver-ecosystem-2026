@@ -10,15 +10,15 @@ config_version=5
 
 [application]
 
-config/name="SafeDriver_Monitor3D"
-run/main_scene="uid://ck6k6e6juxgsl"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/name="mapa"
+run/main_scene="uid://c61nk66f5mxni"
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [display]
 
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/size/viewport_width=1280
+window/size/viewport_height=720
 
 [physics]
 
@@ -27,3 +27,5 @@ window/stretch/aspect="expand"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

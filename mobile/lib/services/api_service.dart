@@ -322,6 +322,34 @@ class ApiService {
     }
   }
 
+    Future<bool> deleteAllAlerts() async {
+    final url = Uri.parse('$baseUrl/alerts');
+    final token = await getToken();
+ 
+    if (token == null) return false;
+ 
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+ 
+      if (response.statusCode == 401) {
+        await handleUnauthorized();
+        return false;
+      }
+ 
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error al limpiar alertas: $e");
+      return false;
+    }
+  }
+ 
+
   Future<List<DriverModel>> getDrivers() async {
     final url = Uri.parse('$baseUrl/drivers');
     final token = await getToken();

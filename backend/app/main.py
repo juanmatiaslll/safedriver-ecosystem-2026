@@ -348,6 +348,23 @@ def resolve_alert(id: int,
     db.commit()
     return {"msg": "Alerta resuelta", "alert_id": id}
 
+# ── 10b. Limpiar historial de alertas (solo ADMIN) ──────────────
+@app.delete("/alerts", tags=["Alertas"])
+def clear_alerts(db: Session = Depends(database.get_db),
+                 _: models.User = Depends(get_current_admin)):
+    total_borradas = db.query(models.Alert).count()
+ 
+    # Borra TODO el historial de alertas (activas e inactivas)
+    db.query(models.Alert).delete()
+ 
+    # Resetea el estado de los conductores que estaban "EN_ALERTA"
+    db.query(models.Driver).filter(
+        models.Driver.status == "EN_ALERTA"
+    ).update({"status": "OK"})
+ 
+    db.commit()
+    return {"msg": "Historial de alertas eliminado", "alertas_eliminadas": total_borradas}
+
 # ── 12. Dashboard stats (solo ADMIN) ────────────────────────────
 @app.get("/dashboard/stats", tags=["Dashboard"])
 def dashboard_stats(_: models.User = Depends(get_current_admin),
