@@ -4,20 +4,19 @@ extends Node2D
 @onready var http_login = HTTPRequest.new()
 @onready var http_alerts = HTTPRequest.new()
 
-# --- CONFIGURACIÓN DEL BACKEND ---
+# CONFIGURACIÓN DEL BACKEND
 const BASE_URL = "http://127.0.0.1:8000"
-# Usuario ADMIN registrado previamente vía /auth/register (ver README)
+# Usuario ADMIN registrado previamente en /auth/register 
 const ADMIN_USERNAME = "admin"
 const ADMIN_PASSWORD = "1234"
 
 var access_token: String = ""
-var alertas_ya_mostradas: Dictionary = {} # evita repintar la misma alerta
+var alertas_ya_mostradas: Dictionary = {}
 
 func _ready():
 	randomize()
 	print("🚀 CENTRO DE CONTROL MONITOR IoT 2D - SAN MARCOS")
 
-	# 🛠️ AJUSTE AUTOMÁTICO DEL MAPA A LA PANTALLA
 	var mapa_sprite = $Sprite2D
 	if mapa_sprite:
 		mapa_sprite.centered = true
@@ -27,16 +26,16 @@ func _ready():
 		mapa_sprite.scale = tamaño_ventana / tamaño_imagen
 		print("🗺️ Mapa ajustado dinámicamente a la resolución de pantalla: ", tamaño_ventana)
 
-	# Nodos HTTPRequest (deben agregarse como hijos para poder usarlos)
+	# Nodos HTTPRequest 
 	add_child(http_login)
 	add_child(http_alerts)
 	http_login.request_completed.connect(_on_login_completed)
 	http_alerts.request_completed.connect(_on_alerts_completed)
 
-	# Primero hacemos login para obtener el token
+	# login para obtener el token
 	_hacer_login()
 
-	# Configuración del temporizador (cada 3 segundos consulta /alerts)
+	# Configuración del temporizador
 	timer.wait_time = 3.0
 	timer.autostart = true
 	if timer.timeout.is_connected(_on_timer_timeout):
@@ -98,7 +97,7 @@ func _on_alerts_completed(result, response_code, headers, body):
 		print("⚠️ No se pudo parsear la respuesta de /alerts")
 		return
 
-	# La API devuelve la lista dentro del campo "data": {"total","page","limit","data":[...]}
+	# La API devuelve la lista dentro del campo 
 	var lista_alertas = json
 	if typeof(json) == TYPE_DICTIONARY:
 		if json.has("data"):
@@ -113,10 +112,10 @@ func _on_alerts_completed(result, response_code, headers, body):
 	for alerta in lista_alertas:
 		var alerta_id = str(alerta.get("id", ""))
 		if alerta_id == "" or alertas_ya_mostradas.has(alerta_id):
-			continue # ya se pintó antes, no la repetimos
+			continue 
 
 		if alerta.get("is_active", true) == false:
-			continue # opcional: solo mostrar alertas activas
+			continue 
 
 		alertas_ya_mostradas[alerta_id] = true
 		_mostrar_alerta_en_mapa(alerta)
