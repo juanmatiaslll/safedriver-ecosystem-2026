@@ -256,7 +256,7 @@ IoT Simulator / Godot
 # 👨‍💻 Equipo
 
 - Juan Matías Lomas — Backend Core
-- Jose Miguel Pacara Ponciano — QA, README y Testing
+- Jose Miguel Pacara Ponciano — Godot, QA, README y Testing
 - Mateo Loaiza Gonzales — Mobile / Flutter
 - Jordy Bujaico Bustillos — Simulación / IoT
 
