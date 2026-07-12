@@ -219,6 +219,9 @@ Flujo: registrar usuario → login → obtener token → `Authorize` en Swagger 
 | POST | `/alerts` | Sí | Crear alerta — body: `{"driver_id","alert_type","severity"}` |
 | GET | `/alerts` | Sí | Listar alertas (query: `page`, `limit`, `date`) |
 | PUT | `/alerts/{id}/resolve` | Sí | Marca la alerta como resuelta |
+| DELETE | `/alerts` | Sí (ADMIN) | Elimina **todo** el historial de alertas (activas e inactivas) y resetea a `OK` el estado de los conductores que estaban `EN_ALERTA` |
+
+> 🗑️ En la app móvil, el usuario ADMIN tiene un botón (ícono de basurero) en la pantalla de Alertas que llama a este endpoint, con confirmación previa. Útil para limpiar el historial acumulado y evitar que el front y la simulación de Godot se saturen de alertas viejas.
 
 ---
 
